@@ -21,42 +21,39 @@ class WebsocketClient
 {
 	private $_Socket = null;
 	
-	public function __construct($host, $port, $path = '/')
-	{
-		$this->_connect($host, $port, $path);	
-	}
+	public function __construct() { }
 	
 	public function __destruct()
 	{
-		$this->_disconnect();
+		$this->disconnect();
 	}
 
 	public function sendData($data, $type = 'text', $masked = true)
 	{		
-		fwrite($this->_Socket, $this->_hybi10EncodeData($data, $type, $masked)) or die('Error:' . $errno . ':' . $errstr); 
-		$wsData = fread($this->_Socket, 2000);				
-		$retData = $this->_hybi10DecodeData($wsData);		
-		
-		return $retData;
+		$res = fwrite($this->_Socket, $this->_hybi10Encode($data, $type, $masked));
+		return $res;
 	}
 
-	private function _connect($host, $port, $path)
-	{		
+	public function connect($host, $port, $path, $origin = false)
+	{
 		$key = base64_encode($this->_generateRandomString(16, false, true));				
 		$header = "GET " . $path . " HTTP/1.1\r\n";
 		$header.= "Host: ".$host.":".$port."\r\n";
 		$header.= "Upgrade: websocket\r\n";
 		$header.= "Connection: Upgrade\r\n";
 		$header.= "Sec-WebSocket-Key: " . $key . "\r\n";
-		$header.= "Sec-WebSocket-Origin: http://foobar.com\r\n";				
-		$header.= "Sec-WebSocket-Version: 8\r\n";			
+		if($origin !== false)
+		{
+			$header.= "Sec-WebSocket-Origin: " . $origin . "\r\n";
+		}
+		$header.= "Sec-WebSocket-Version: 13\r\n";
 		
 		$this->_Socket = fsockopen($host, $port, $errno, $errstr, 2); 
 		if (!$this->_Socket) {
 			throw new WebsocketClientError($errstr, $errno);
 		}
-		fwrite($this->_Socket, $header) or die('Error: ' . $errno . ':' . $errstr); 
-		$response = fread($this->_Socket, 2000);		
+		fwrite($this->_Socket, $header);
+		$response = fread($this->_Socket, 1500);
 
 		preg_match('#Sec-WebSocket-Accept:\s(.*)$#mU', $response, $matches);
 		$keyAccept = trim($matches[1]);
@@ -65,7 +62,7 @@ class WebsocketClient
 		return ($keyAccept === $expectedResonse) ? true : false;		
 	}
 	
-	private function _disconnect()
+	public function disconnect()
 	{
 		fclose($this->_Socket);
 	}
@@ -94,14 +91,24 @@ class WebsocketClient
 		return $randomString;
 	}
 	
-	private function _hybi10EncodeData($payload, $type = 'text', $masked = true)
+	private function _hybi10Encode($payload, $type = 'text', $masked = true)
 	{
 		$frameHead = array();
 		$frame = '';
 		$payloadLength = strlen($payload);
 		
 		switch($type)
-		{
+		{		
+			case 'text':
+				// first byte indicates FIN, Text-Frame (10000001):
+				$frameHead[0] = 129;				
+			break;			
+		
+			case 'close':
+				// first byte indicates FIN, Close Frame(10001000):
+				$frameHead[0] = 136;
+			break;
+		
 			case 'ping':
 				// first byte indicates FIN, Ping frame (10001001):
 				$frameHead[0] = 137;
@@ -110,14 +117,6 @@ class WebsocketClient
 			case 'pong':
 				// first byte indicates FIN, Pong frame (10001010):
 				$frameHead[0] = 138;
-			break;
-		
-			case 'text':
-				// first byte indicates FIN, Text-Frame (10000001):
-				$frameHead[0] = 129;				
-			break;			
-		
-			case 'close':
 			break;
 		}
 		
@@ -130,9 +129,10 @@ class WebsocketClient
 			{
 				$frameHead[$i+2] = bindec($payloadLengthBin[$i]);
 			}
-			// most significant bit MUST be 0 (return false if to much data)
+			// most significant bit MUST be 0 (close connection if frame too big)
 			if($frameHead[2] > 127)
 			{
+				$this->close(1004);
 				return false;
 			}
 		}
@@ -176,8 +176,8 @@ class WebsocketClient
 		return $frame;
 	}
 	
-	private function _hybi10DecodeData($data)
-	{		
+	private function _hybi10Decode($data)
+	{
 		$payloadLength = '';
 		$mask = '';
 		$unmaskedPayload = '';
@@ -190,13 +190,21 @@ class WebsocketClient
 		$isMasked = ($secondByteBinary[0] == '1') ? true : false;
 		$payloadLength = ord($data[1]) & 127;
 		
-		// @TODO: close connection if unmasked frame is received.		
+		// close connection if unmasked frame is received:
+		if($isMasked === false)
+		{
+			$this->close(1002);
+		}
 		
 		switch($opcode)
 		{
 			// text frame:
 			case 1:
 				$decodedData['type'] = 'text';				
+			break;
+		
+			case 2:
+				$decodedData['type'] = 'binary';
 			break;
 			
 			// connection close frame:
@@ -215,7 +223,8 @@ class WebsocketClient
 			break;
 			
 			default:
-				// @TODO: Close connection on unknown opcode.
+				// Close connection on unknown opcode:
+				$this->close(1003);
 			break;
 		}
 		
@@ -223,26 +232,46 @@ class WebsocketClient
 		{
 		   $mask = substr($data, 4, 4);
 		   $payloadOffset = 8;
+		   $dataLength = bindec(sprintf('%08b', ord($data[2])) . sprintf('%08b', ord($data[3]))) + $payloadOffset;
 		}
 		elseif($payloadLength === 127)
 		{
 			$mask = substr($data, 10, 4);
 			$payloadOffset = 14;
+			$tmp = '';
+			for($i = 0; $i < 8; $i++)
+			{
+				$tmp .= sprintf('%08b', ord($data[$i+2]));
+			}
+			$dataLength = bindec($tmp) + $payloadOffset;
+			unset($tmp);
 		}
 		else
 		{
 			$mask = substr($data, 2, 4);	
 			$payloadOffset = 6;
+			$dataLength = $payloadLength + $payloadOffset;
 		}
 		
-		$dataLength = strlen($data);
+		/**
+		 * We have to check for large frames here. socket_recv cuts at 1024 bytes
+		 * so if websocket-frame is > 1024 bytes we have to wait until whole
+		 * data is transferd. 
+		 */
+		if(strlen($data) < $dataLength)
+		{			
+			return false;
+		}
 		
 		if($isMasked === true)
 		{
 			for($i = $payloadOffset; $i < $dataLength; $i++)
 			{
 				$j = $i - $payloadOffset;
-				$unmaskedPayload .= $data[$i] ^ $mask[$j % 4];
+				if(isset($data[$i]))
+				{
+					$unmaskedPayload .= $data[$i] ^ $mask[$j % 4];
+				}
 			}
 			$decodedData['payload'] = $unmaskedPayload;
 		}
@@ -254,11 +283,6 @@ class WebsocketClient
 		
 		return $decodedData;
 	}
+
 }
-try{
-  $WebSocketClient = new WebsocketClient('127.0.0.1', 8000, '/echo');
-  var_dump($WebSocketClient->sendData('test', 'ping'));
-  unset($WebSocketClient);
-}catch(WebsocketClientError $ex){
-  echo "can't connect to server";
-}
+
