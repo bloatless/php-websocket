@@ -2,6 +2,14 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+class WebsocketClientError extends Exception {
+  
+  public function __construct($message, $code){
+    
+  }
+  
+}
+
 /**
  * Very basic websocket client.
  * Supporting draft hybi-10. 
@@ -9,7 +17,6 @@ error_reporting(E_ALL);
  * @author Simon Samtleben <web@lemmingzshadow.net>
  * @version 2011-10-18
  */
-
 class WebsocketClient
 {
 	private $_Socket = null;
@@ -39,11 +46,14 @@ class WebsocketClient
 		{
 			$header.= "Sec-WebSocket-Origin: " . $origin . "\r\n";
 		}
-		$header.= "Sec-WebSocket-Version: 13\r\n";			
+		$header.= "Sec-WebSocket-Version: 13\r\n";
 		
 		$this->_Socket = fsockopen($host, $port, $errno, $errstr, 2); 
-		fwrite($this->_Socket, $header); 
-		$response = fread($this->_Socket, 1500);		
+		if (!$this->_Socket) {
+			throw new WebsocketClientError($errstr, $errno);
+		}
+		fwrite($this->_Socket, $header);
+		$response = fread($this->_Socket, 1500);
 
 		preg_match('#Sec-WebSocket-Accept:\s(.*)$#mU', $response, $matches);
 		$keyAccept = trim($matches[1]);
@@ -273,4 +283,6 @@ class WebsocketClient
 		
 		return $decodedData;
 	}
+
 }
+
