@@ -212,6 +212,14 @@ class Connection
 			$this->server->getApplication('status')->clientActivity($this->port);
 		}
 		
+		if(!isset($data['type']))
+		{
+			$this->sendHttpResponse(401);
+			stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
+			$this->server->removeClientOnError($this);
+			return false;
+		}
+		
 		switch($decodedData['type'])
 		{
 			case 'text':				
