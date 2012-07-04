@@ -124,7 +124,11 @@ class Connection
 		$response.= "Upgrade: websocket\r\n";
 		$response.= "Connection: Upgrade\r\n";
 		$response.= "Sec-WebSocket-Accept: " . $secAccept . "\r\n";
-		$response.= "Sec-WebSocket-Protocol: " . substr($path, 1) . "\r\n\r\n";		
+		if(isset($headers['Sec-WebSocket-Protocol']) && !empty($headers['Sec-WebSocket-Protocol']))
+		{
+			$response.= "Sec-WebSocket-Protocol: " . substr($path, 1) . "\r\n";
+		}
+		$response.= "\r\n";
 		if(false === ($this->server->writeBuffer($this->socket, $response)))
 		{
 			return false;
