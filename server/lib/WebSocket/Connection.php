@@ -216,7 +216,7 @@ class Connection
 			$this->server->getApplication('status')->clientActivity($this->port);
 		}
 		
-		if(!isset($data['type']))
+		if(!isset($decodedData['type']))
 		{
 			$this->sendHttpResponse(401);
 			stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
