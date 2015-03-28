@@ -30,9 +30,14 @@ class WebsocketClient
 	{
 		if($this->_connected === false)
 		{
+			trigger_error("Not connected", E_USER_WARNING);
 			return false;
 		}
-		if(empty($data))
+		if( !is_string($data)) {
+			trigger_error("Not a string data was given.", E_USER_WARNING);
+			return false;		
+		}
+		if (strlen($data) == 0)
 		{
 			return false;
 		}
@@ -44,7 +49,7 @@ class WebsocketClient
 		$buffer = ' ';
 		while($buffer !== '')
 		{			
-			$buffer = fread($this->_Socket, 512);
+			$buffer = fread($this->_Socket, 512);// drop?
 		}
 		
 		return true;
