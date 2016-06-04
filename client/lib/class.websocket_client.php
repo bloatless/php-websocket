@@ -72,7 +72,7 @@ class WebsocketClient
 		{
 			$header.= "Sec-WebSocket-Origin: " . $origin . "\r\n";
 		}
-		$header.= "Sec-WebSocket-Version: 13\r\n";			
+		$header.= "Sec-WebSocket-Version: 13\r\n\r\n";			
 		
 		$this->_Socket = fsockopen($host, $port, $errno, $errstr, 2);
 		socket_set_timeout($this->_Socket, 0, 10000);
