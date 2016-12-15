@@ -83,8 +83,8 @@ class WebsocketClient
 
 		if ($matches) {
 			$keyAccept = trim($matches[1]);
-			$expectedResonse = base64_encode(pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
-			$this->_connected = ($keyAccept === $expectedResonse) ? true : false;
+			$expectedResponse = base64_encode(pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
+			$this->_connected = ($keyAccept === $expectedResponse) ? true : false;
 		}
 
 		return $this->_connected;
