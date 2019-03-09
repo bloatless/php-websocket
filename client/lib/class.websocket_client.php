@@ -47,7 +47,15 @@ class WebsocketClient
         $this->disconnect();
     }
 
-    public function sendData(string $data, string $type = 'text', bool $masked = true)
+    /**
+     * Sends data to remote server.
+     *
+     * @param string $data
+     * @param string $type
+     * @param bool $masked
+     * @return bool
+     */
+    public function sendData(string $data, string $type = 'text', bool $masked = true): bool
     {
         if ($this->connected === false) {
             trigger_error("Not connected", E_USER_WARNING);
@@ -72,7 +80,16 @@ class WebsocketClient
         return true;
     }
 
-    public function connect(string $host, int $port, string $path, string $origin = '')
+    /**
+     * Connects to a websocket server.
+     *
+     * @param string $host
+     * @param int $port
+     * @param string $path
+     * @param string $origin
+     * @return bool
+     */
+    public function connect(string $host, int $port, string $path, string $origin = ''): bool
     {
         $this->host = $host;
         $this->port = $port;
@@ -106,7 +123,12 @@ class WebsocketClient
         return $this->connected;
     }
 
-    public function checkConnection()
+    /**
+     * Checks if connection to webserver is active.
+     *
+     * @return bool
+     */
+    public function checkConnection(): bool
     {
         $this->connected = false;
 
@@ -125,17 +147,28 @@ class WebsocketClient
             return false;
         }
         $this->connected = true;
+
         return true;
     }
 
 
-    public function disconnect()
+    /**
+     * Disconnectes from websocket server.
+     *
+     * @return void
+     */
+    public function disconnect(): void
     {
         $this->connected = false;
-        is_resource($this->socket) and fclose($this->socket);
+        is_resource($this->socket) && fclose($this->socket);
     }
 
-    public function reconnect()
+    /**
+     * Reconnects to previously connected websocket server.
+     *
+     * @return void
+     */
+    public function reconnect(): void
     {
         sleep(10);
         $this->connected = false;
@@ -143,7 +176,15 @@ class WebsocketClient
         $this->connect($this->host, $this->port, $this->path, $this->origin);
     }
 
-    private function generateRandomString(int $length = 10, bool $addSpaces = true, bool $addNumbers = true)
+    /**
+     * Generates a random string.
+     *
+     * @param int $length
+     * @param bool $addSpaces
+     * @param bool $addNumbers
+     * @return string
+     */
+    private function generateRandomString(int $length = 10, bool $addSpaces = true, bool $addNumbers = true): string
     {
         $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"§$%&/()=[]{}';
         $useChars = [];
@@ -161,10 +202,19 @@ class WebsocketClient
         shuffle($useChars);
         $randomString = trim(implode('', $useChars));
         $randomString = substr($randomString, 0, $length);
+
         return $randomString;
     }
 
-    private function hybi10Encode(string $payload, string $type = 'text', bool $masked = true)
+    /**
+     * Encodes data according to the WebSocket protocol standard.
+     *
+     * @param string $payload
+     * @param string $type
+     * @param bool $masked
+     * @return string
+     */
+    private function hybi10Encode(string $payload, string $type = 'text', bool $masked = true): string
     {
         $frameHead = [];
         $payloadLength = strlen($payload);
@@ -201,7 +251,7 @@ class WebsocketClient
             // most significant bit MUST be 0 (close connection if frame too big)
             if ($frameHead[2] > 127) {
                 $this->disconnect();
-                return false;
+                throw new \RuntimeException('Invalid payload. Could not encode frame.');
             }
         } elseif ($payloadLength > 125) {
             $payloadLengthBin = str_split(sprintf('%016b', $payloadLength), 8);
@@ -235,7 +285,13 @@ class WebsocketClient
         return $frame;
     }
 
-    private function hybi10Decode(string $data)
+    /**
+     * Decodes a received frame/sting according to the WebSocket protocol standards.
+     *
+     * @param string $data
+     * @return array
+     */
+    private function hybi10Decode(string $data): array
     {
         $unmaskedPayload = '';
         $decodedData = [];
@@ -268,8 +324,7 @@ class WebsocketClient
                 $decodedData['type'] = 'pong';
                 break;
             default:
-                return false;
-                break;
+                throw new \RuntimeException('Could not decode frame. Invalid type.');
         }
 
         if ($payloadLength === 126) {
