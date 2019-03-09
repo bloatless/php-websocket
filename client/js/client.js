@@ -1,50 +1,54 @@
 (function() {
-    $(document).ready(function() {
-        var log, serverUrl, socket;
-        log = function(msg) {
-            return $('#log').append(`${msg}<br />`);
+    document.addEventListener("DOMContentLoaded", function() {
+
+        const elLog = document.getElementById('log');
+        const elStatus = document.getElementById('status');
+        const elSend = document.getElementById('send');
+        const elAction = document.getElementById('action');
+        const elData = document.getElementById('data');
+
+        const log = (msg) => {
+            return elLog.insertAdjacentHTML('afterbegin', `${msg}<br />`);
         };
-        serverUrl = 'ws://127.0.0.1:8000/demo';
+
+        let socket = null;
+        let serverUrl = 'ws://127.0.0.1:8000/demo';
         if (window.MozWebSocket) {
             socket = new MozWebSocket(serverUrl);
         } else if (window.WebSocket) {
             socket = new WebSocket(serverUrl);
         }
         socket.binaryType = 'blob';
-        socket.onopen = function(msg) {
-            return $('#status').removeClass().addClass('online').html('connected');
+        socket.onopen = (msg) => {
+            elStatus.classList.remove('offline');
+            elStatus.classList.add('online');
+            return elStatus.innerText = 'connected';
         };
-        socket.onmessage = function(msg) {
-            var response;
-            response = JSON.parse(msg.data);
+
+        socket.onmessage = (msg) => {
+            let response = JSON.parse(msg.data);
             log(`Action: ${response.action}`);
             return log(`Data: ${response.data}`);
         };
-        socket.onclose = function(msg) {
-            return $('#status').removeClass().addClass('offline').html('disconnected');
+
+        socket.onclose = (msg) => {
+            elStatus.classList.remove('online');
+            elStatus.classList.add('offline');
+            return elStatus.innerText = 'disconnected';
         };
-        $('#status').click(function() {
+
+        elStatus.addEventListener('click', () => {
             return socket.close();
         });
-        $('#send').click(function() {
-            var payload;
-            payload = new Object();
-            payload.action = $('#action').val();
-            payload.data = $('#data').val();
+
+        elSend.addEventListener('click', () => {
+            let payload = {
+                action: elAction.value,
+                data: elData.value
+            };
             return socket.send(JSON.stringify(payload));
         });
-        return $('#sendfile').click(function() {
-            var data, payload;
-            data = document.binaryFrame.file.files[0];
-            if (data) {
-                payload = new Object();
-                payload.action = 'setFilename';
-                payload.data = $('#file').val();
-                socket.send(JSON.stringify(payload));
-                socket.send(data);
-            }
-            return false;
-        });
+
     });
 
-}).call(this);
+}).call();
