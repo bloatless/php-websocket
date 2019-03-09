@@ -76,6 +76,13 @@ class Connection
         $this->log('Connected');
     }
 
+    /**
+     * Handles the client-server handshake.
+     *
+     * @param string $data
+     * @throws \RuntimeException
+     * @return bool
+     */
     private function handshake(string $data): bool
     {
         $this->log('Performing handshake');
@@ -171,6 +178,13 @@ class Connection
         return true;
     }
 
+    /**
+     * Sends an http response to client.
+     *
+     * @param int $httpStatusCode
+     * @throws \RuntimeException
+     * @return void
+     */
     public function sendHttpResponse(int $httpStatusCode = 400): void
     {
         $httpHeader = 'HTTP/1.1 ';
@@ -199,6 +213,12 @@ class Connection
         }
     }
 
+    /**
+     * Triggered whenever the server receives new data from a client.
+     *
+     * @param string $data
+     * @return void
+     */
     public function onData(string $data): void
     {
         if ($this->handshaked) {
@@ -208,6 +228,12 @@ class Connection
         }
     }
 
+    /**
+     * Decodes incoming data and executes the requested action.
+     *
+     * @param string $data
+     * @return bool
+     */
     private function handle(string $data): bool
     {
         if ($this->waitingForData === true) {
@@ -263,6 +289,8 @@ class Connection
     }
 
     /**
+     * Sends data to a client.
+     *
      * @param string $payload
      * @param string $type
      * @param bool $masked
@@ -282,6 +310,12 @@ class Connection
         return true;
     }
 
+    /**
+     * Closes connection to a client.
+     *
+     * @param int $statusCode
+     * @return void
+     */
     public function close(int $statusCode = 1000): void
     {
         $payload = str_split(sprintf('%016b', $statusCode), 8);
@@ -325,17 +359,38 @@ class Connection
     }
 
 
+    /**
+     * Triggered when a client closes the connection to server.
+     *
+     * @return void
+     */
     public function onDisconnect(): void
     {
         $this->log('Disconnected', 'info');
         $this->close(1000);
     }
 
+    /**
+     * Writes a log message.
+     *
+     * @param string $message
+     * @param string $type
+     * @return void
+     */
     public function log(string $message, string $type = 'info'): void
     {
         $this->server->log('[client ' . $this->ip . ':' . $this->port . '] ' . $message, $type);
     }
 
+    /**
+     * Encodes a frame/message according the the WebSocket protocol standard.
+     *
+     * @param string $payload
+     * @param string $type
+     * @param bool $masked
+     * @throws \RuntimeException
+     * @return string
+     */
     private function hybi10Encode(string $payload, string $type = 'text', bool $masked = true): string
     {
         $frameHead = [];
@@ -407,6 +462,12 @@ class Connection
         return $frame;
     }
 
+    /**
+     * Decodes a frame/message according to the WebSocket protocol standard.
+     *
+     * @param string $data
+     * @return array
+     */
     private function hybi10Decode(string $data): array
     {
         $unmaskedPayload = '';
@@ -494,26 +555,51 @@ class Connection
         return $decodedData;
     }
 
+    /**
+     * Returns IP of the connected client.
+     *
+     * @return string
+     */
     public function getClientIp(): string
     {
         return $this->ip;
     }
 
+    /**
+     * Returns the port the connection is handled on.
+     *
+     * @return int
+     */
     public function getClientPort(): int
     {
         return $this->port;
     }
 
+    /**
+     * Returns the unique client id.
+     *
+     * @return string
+     */
     public function getClientId(): string
     {
         return $this->connectionId;
     }
 
+    /**
+     * Retuns the socket/resource of the connection.
+     *
+     * @return resource
+     */
     public function getClientSocket()
     {
         return $this->socket;
     }
 
+    /**
+     * Returns the application the client is connected to.
+     *
+     * @return ApplicationInterface|null
+     */
     public function getClientApplication(): ?ApplicationInterface
     {
         return $this->application;

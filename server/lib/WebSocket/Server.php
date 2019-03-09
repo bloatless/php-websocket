@@ -81,9 +81,12 @@ class Server extends Socket
     }
 
     /**
-     * Main server method. Listens for connections, handles connectes/disconnectes, e.g.
+     * Main server loop.
+     * Listens for connections, handles connectes/disconnectes, e.g.
+     *
+     * @return void
      */
-    public function run()
+    public function run(): void
     {
         while (true) {
             $changed_sockets = $this->allsockets;
