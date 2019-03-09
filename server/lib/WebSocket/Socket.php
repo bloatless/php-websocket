@@ -4,17 +4,12 @@ declare(strict_types=1);
 
 namespace WebSocket;
 
-
 /**
  * Socket class
  *
  * @author Moritz Wutz <moritzwutz@gmail.com>
  * @author Nico Kaiser <nico@kaiser.me>
  * @version 0.2
- */
-
-/**
- * This is the main socket class
  */
 class Socket
 {

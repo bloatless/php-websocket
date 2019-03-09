@@ -1,17 +1,16 @@
 <?php
-/* This program is free software. It comes without any warranty, to
- * the extent permitted by applicable law. You can redistribute it
- * and/or modify it under the terms of the Do What The Fuck You Want
- * To Public License, Version 2, as published by Sam Hocevar. See
- * http://sam.zoy.org/wtfpl/COPYING for more details. */
 
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require(__DIR__ . '/lib/SplClassLoader.php');
+require __DIR__ . '/lib/WebSocket/Connection.php';
+require __DIR__ . '/lib/WebSocket/Socket.php';
+require __DIR__ . '/lib/WebSocket/Server.php';
 
-$classLoader = new SplClassLoader('WebSocket', __DIR__ . '/lib');
-$classLoader->register();
+require __DIR__ . '/lib/WebSocket/Application/ApplicationInterface.php';
+require __DIR__ . '/lib/WebSocket/Application/Application.php';
+require __DIR__ . '/lib/WebSocket/Application/DemoApplication.php';
+require __DIR__ . '/lib/WebSocket/Application/StatusApplication.php';
 
 $server = new \WebSocket\Server('127.0.0.1', 8000);
 
