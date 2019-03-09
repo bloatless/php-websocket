@@ -12,23 +12,42 @@ error_reporting(E_ALL);
  */
 class WebsocketClient
 {
+    /**
+     * @var string $host
+     */
     private $host;
-    private $port;
-    private $path;
-    private $origin;
-    private $socket = null;
-    private $connected = false;
 
-    public function __construct()
-    {
-    }
+    /**
+     * @var int $port
+     */
+    private $port;
+
+    /**
+     * @var string $path
+     */
+    private $path;
+
+    /**
+     * @var string $origin
+     */
+    private $origin;
+
+    /**
+     * @var resource $socket
+     */
+    private $socket = null;
+
+    /**
+     * @var bool $connected
+     */
+    private $connected = false;
 
     public function __destruct()
     {
         $this->disconnect();
     }
 
-    public function sendData($data, $type = 'text', $masked = true)
+    public function sendData(string $data, string $type = 'text', bool $masked = true)
     {
         if ($this->connected === false) {
             trigger_error("Not connected", E_USER_WARNING);
@@ -38,7 +57,7 @@ class WebsocketClient
             trigger_error("Not a string data was given.", E_USER_WARNING);
             return false;
         }
-        if (strlen($data) == 0) {
+        if (strlen($data) === 0) {
             return false;
         }
         $res = @fwrite($this->socket, $this->hybi10Encode($data, $type, $masked));
@@ -53,7 +72,7 @@ class WebsocketClient
         return true;
     }
 
-    public function connect($host, $port, $path, $origin = false)
+    public function connect(string $host, int $port, string $path, string $origin = '')
     {
         $this->host = $host;
         $this->port = $port;
@@ -66,7 +85,7 @@ class WebsocketClient
         $header .= "Upgrade: websocket\r\n";
         $header .= "Connection: Upgrade\r\n";
         $header .= "Sec-WebSocket-Key: " . $key . "\r\n";
-        if ($origin !== false) {
+        if (!empty($origin)) {
             $header .= "Sec-WebSocket-Origin: " . $origin . "\r\n";
         }
         $header .= "Sec-WebSocket-Version: 13\r\n\r\n";
@@ -124,10 +143,10 @@ class WebsocketClient
         $this->connect($this->host, $this->port, $this->path, $this->origin);
     }
 
-    private function generateRandomString($length = 10, $addSpaces = true, $addNumbers = true)
+    private function generateRandomString(int $length = 10, bool $addSpaces = true, bool $addNumbers = true)
     {
         $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"§$%&/()=[]{}';
-        $useChars = array();
+        $useChars = [];
         // select some random chars:
         for ($i = 0; $i < $length; $i++) {
             $useChars[] = $characters[mt_rand(0, strlen($characters) - 1)];
@@ -145,10 +164,9 @@ class WebsocketClient
         return $randomString;
     }
 
-    private function hybi10Encode($payload, $type = 'text', $masked = true)
+    private function hybi10Encode(string $payload, string $type = 'text', bool $masked = true)
     {
-        $frameHead = array();
-        $frame = '';
+        $frameHead = [];
         $payloadLength = strlen($payload);
 
         switch ($type) {
@@ -182,7 +200,7 @@ class WebsocketClient
             }
             // most significant bit MUST be 0 (close connection if frame too big)
             if ($frameHead[2] > 127) {
-                $this->close(1004);
+                $this->disconnect();
                 return false;
             }
         } elseif ($payloadLength > 125) {
@@ -200,7 +218,7 @@ class WebsocketClient
         }
         if ($masked === true) {
             // generate a random mask:
-            $mask = array();
+            $mask = [];
             for ($i = 0; $i < 4; $i++) {
                 $mask[$i] = chr(rand(0, 255));
             }
@@ -210,7 +228,6 @@ class WebsocketClient
         $frame = implode('', $frameHead);
 
         // append payload to frame:
-        $framePayload = array();
         for ($i = 0; $i < $payloadLength; $i++) {
             $frame .= ($masked === true) ? $payload[$i] ^ $mask[$i % 4] : $payload[$i];
         }
@@ -218,12 +235,10 @@ class WebsocketClient
         return $frame;
     }
 
-    private function hybi10Decode($data)
+    private function hybi10Decode(string $data)
     {
-        $payloadLength = '';
-        $mask = '';
         $unmaskedPayload = '';
-        $decodedData = array();
+        $decodedData = [];
 
         // estimate frame type:
         $firstByteBinary = sprintf('%08b', ord($data[0]));
@@ -237,26 +252,21 @@ class WebsocketClient
             case 1:
                 $decodedData['type'] = 'text';
                 break;
-
             case 2:
                 $decodedData['type'] = 'binary';
                 break;
-
             // connection close frame:
             case 8:
                 $decodedData['type'] = 'close';
                 break;
-
             // ping frame:
             case 9:
                 $decodedData['type'] = 'ping';
                 break;
-
             // pong frame:
             case 10:
                 $decodedData['type'] = 'pong';
                 break;
-
             default:
                 return false;
                 break;
