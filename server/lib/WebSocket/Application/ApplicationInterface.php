@@ -8,11 +8,32 @@ use WebSocket\Connection;
 
 interface ApplicationInterface
 {
-    public function onConnect(Connection $connection);
+    /**
+     * This method is tirggered when a new client connects to server/application.
+     *
+     * @param Connection $connection
+     */
+    public function onConnect(Connection $connection): void;
 
-    public function onDisconnect(Connection $connection);
+    /**
+     * This methods is triggered when a client disconnects from server/application.
+     *
+     * @param Connection $connection
+     */
+    public function onDisconnect(Connection $connection): void;
 
-    public function onData(string $data, Connection $client);
+    /**
+     * This method is triggered when the server recieves new data.
+     *
+     * @param string $data
+     * @param Connection $client
+     */
+    public function onData(string $data, Connection $client): void;
 
+    /**
+     * Creates and returns a new instance of the application.
+     *
+     * @return ApplicationInterface
+     */
     public static function getInstance(): ApplicationInterface;
 }

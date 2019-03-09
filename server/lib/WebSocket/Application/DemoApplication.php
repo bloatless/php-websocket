@@ -13,34 +13,63 @@ use WebSocket\Connection;
  */
 class DemoApplication extends Application
 {
+    /**
+     * @var array $clients
+     */
     private $clients = [];
 
-    public function onConnect(Connection $client)
+    /**
+     * Handles new connections to the application.
+     *
+     * @param Connection $client
+     * @return void
+     */
+    public function onConnect(Connection $client): void
     {
         $id = $client->getClientId();
         $this->clients[$id] = $client;
     }
 
-    public function onDisconnect(Connection $client)
+    /**
+     * Handles client disconnects.
+     *
+     * @param Connection $client
+     * @return void
+     */
+    public function onDisconnect(Connection $client): void
     {
         $id = $client->getClientId();
         unset($this->clients[$id]);
     }
 
-    public function onData(string $data, Connection $client)
+    /**
+     * Handles incomming data/requests.
+     * If valid action is given the according method will be called.
+     *
+     * @param string $data
+     * @param Connection $client
+     * @return void
+     */
+    public function onData(string $data, Connection $client): void
     {
-        $decodedData = $this->decodeData($data);
-        if ($decodedData === false) {
-            // @todo: invalid request trigger error...
-        }
-
-        $actionName = 'action' . ucfirst($decodedData['action']);
-        if (method_exists($this, $actionName)) {
-            call_user_func([$this, $actionName], $decodedData['data']);
+        try {
+            $decodedData = $this->decodeData($data);
+            $actionName = 'action' . ucfirst($decodedData['action']);
+            if (method_exists($this, $actionName)) {
+                call_user_func([$this, $actionName], $decodedData['data']);
+            }
+        } catch (\RuntimeException $e) {
+            // @todo Handle/Log error
         }
     }
 
-    private function actionEcho(string $text)
+    /**
+     * Echoes data back to client(s).
+     *
+     * @param string $text
+     * @return void
+     */
+    private function actionEcho(string $text): void
     {
         $encodedData = $this->encodeData('echo', $text);
         foreach ($this->clients as $sendto) {
