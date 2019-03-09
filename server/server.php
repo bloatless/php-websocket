@@ -13,11 +13,11 @@ require(__DIR__ . '/lib/SplClassLoader.php');
 $classLoader = new SplClassLoader('WebSocket', __DIR__ . '/lib');
 $classLoader->register();
 
-$server = new \WebSocket\Server('127.0.0.1', 8000, false);
+$server = new \WebSocket\Server('127.0.0.1', 8000);
 
 // server settings:
 $server->setMaxClients(100);
-$server->setCheckOrigin(true);
+$server->setCheckOrigin(false);
 $server->setAllowedOrigin('foo.lh');
 $server->setMaxConnectionsPerIp(100);
 $server->setMaxRequestsPerMinute(2000);

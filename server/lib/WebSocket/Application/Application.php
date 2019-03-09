@@ -1,24 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WebSocket\Application;
 
 /**
  * WebSocket Server Application
- * 
+ *
  * @author Nico Kaiser <nico@kaiser.me>
  */
-abstract class Application
+abstract class Application implements ApplicationInterface
 {
-    protected static $instances = array();
-    
-    /**
-     * Singleton 
-     */
-    protected function __construct() { }
+    protected static $instances = [];
 
-    final private function __clone() { }
-    
-    final public static function getInstance()
+    /**
+     * Singleton
+     */
+    protected function __construct()
+    {
+    }
+
+    final private function __clone()
+    {
+    }
+
+    final public static function getInstance(): ApplicationInterface
     {
         $calledClassName = get_called_class();
         if (!isset(self::$instances[$calledClassName])) {
@@ -28,42 +34,31 @@ abstract class Application
         return self::$instances[$calledClassName];
     }
 
-    abstract public function onConnect($connection);
+    protected function decodeData($data)
+    {
+        $decodedData = json_decode($data, true);
+        if ($decodedData === null) {
+            return false;
+        }
 
-	abstract public function onDisconnect($connection);
+        if (isset($decodedData['action'], $decodedData['data']) === false) {
+            return false;
+        }
 
-	abstract public function onData($data, $client);
+        return $decodedData;
+    }
 
-	// Common methods:
-	
-	protected function _decodeData($data)
-	{
-		$decodedData = json_decode($data, true);
-		if($decodedData === null)
-		{
-			return false;
-		}
-		
-		if(isset($decodedData['action'], $decodedData['data']) === false)
-		{
-			return false;
-		}
-		
-		return $decodedData;
-	}
-	
-	protected function _encodeData($action, $data)
-	{
-		if(empty($action))
-		{
-			return false;
-		}
-		
-		$payload = array(
-			'action' => $action,
-			'data' => $data
-		);
-		
-		return json_encode($payload);
-	}
+    protected function encodeData($action, $data)
+    {
+        if (empty($action)) {
+            return false;
+        }
+
+        $payload = [
+            'action' => $action,
+            'data' => $data
+        ];
+
+        return json_encode($payload);
+    }
 }
