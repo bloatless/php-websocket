@@ -75,7 +75,7 @@ class Server extends Socket
      * @param resource $resource A socket resource
      * @return Connection
      */
-    protected function createConnection($resource)
+    protected function createConnection($resource): Connection
     {
         return new Connection($this, $resource);
     }
@@ -100,7 +100,7 @@ class Server extends Socket
 
                         if (count($this->clients) > $this->maxClients) {
                             $client->onDisconnect();
-                            if ($this->getApplication('status') !== false) {
+                            if ($this->hasApplication('status')) {
                                 $this->getApplication('status')->statusMsg(
                                     'Attention: Client Limit Reached!',
                                     'warning'
@@ -112,7 +112,7 @@ class Server extends Socket
                         $this->addIpToStorage($client->getClientIp());
                         if ($this->checkMaxConnectionsPerIp($client->getClientIp()) === false) {
                             $client->onDisconnect();
-                            if ($this->getApplication('status') !== false) {
+                            if ($this->hasApplication('status')) {
                                 $this->getApplication('status')->statusMsg(
                                     'Connection/Ip limit for ip ' . $client->getClientIp() . ' was reached!',
                                     'warning'
@@ -122,21 +122,25 @@ class Server extends Socket
                         }
                     }
                 } else {
+                    /** @var Connection $client */
                     $client = $this->clients[(int)$socket];
                     if (!is_object($client)) {
                         unset($this->clients[(int)$socket]);
                         continue;
                     }
-                    $data = $this->readBuffer($socket);
-                    $bytes = strlen($data);
 
+                    try {
+                        $data = $this->readBuffer($socket);
+                    } catch (\RuntimeException $e) {
+                        $this->removeClientOnError($client);
+                        continue;
+                    }
+                    $bytes = strlen($data);
                     if ($bytes === 0) {
                         $client->onDisconnect();
                         continue;
-                    } elseif ($data === false) {
-                        $this->removeClientOnError($client);
-                        continue;
-                    } elseif ($client->waitingForData === false
+                    }
+                    if ($client->waitingForData === false
                         && $this->checkRequestLimit($client->getClientId()) === false) {
                         $client->onDisconnect();
                     } else {
@@ -148,29 +152,43 @@ class Server extends Socket
     }
 
     /**
-     * Returns a server application.
+     * Checks if an application is registred.
      *
-     * @param string $key Name of application.
-     * @return object The application object.
+     * @param string $key
+     * @return bool
      */
-    public function getApplication(string $key)
+    public function hasApplication(string $key): bool
     {
         if (empty($key)) {
             return false;
         }
-        if (array_key_exists($key, $this->applications)) {
-            return $this->applications[$key];
-        }
-        return false;
+
+        return array_key_exists($key, $this->applications);
     }
+
+    /**
+     * Returns a server application.
+     *
+     * @param string $key Name of application.
+     * @return ApplicationInterface The application object.
+     */
+    public function getApplication(string $key): ApplicationInterface
+    {
+        if ($this->hasApplication($key) === false) {
+            throw new \RuntimeException('Unknown application requested.');
+        }
+        return $this->applications[$key];
+    }
+
 
     /**
      * Adds a new application object to the application storage.
      *
      * @param string $key Name of application.
      * @param ApplicationInterface $application The application object.
+     * @return void
      */
-    public function registerApplication(string $key, ApplicationInterface $application)
+    public function registerApplication(string $key, ApplicationInterface $application): void
     {
         $this->applications[$key] = $application;
 
@@ -190,8 +208,9 @@ class Server extends Socket
      *
      * @param string $message Message to display.
      * @param string $type Type of message.
+     * @return void
      */
-    public function log(string $message, string $type = 'info')
+    public function log(string $message, string $type = 'info'): void
     {
         echo date('Y-m-d H:i:s') . ' [' . ($type ? $type : 'error') . '] ' . $message . PHP_EOL;
     }
@@ -200,8 +219,9 @@ class Server extends Socket
      * Removes a client from client storage.
      *
      * @param Connection $client
+     * @return void
      */
-    public function removeClientOnClose(Connection $client)
+    public function removeClientOnClose(Connection $client): void
     {
         $clientId = $client->getClientId();
         $clientIp = $client->getClientIp();
@@ -217,7 +237,7 @@ class Server extends Socket
         unset($this->allsockets[$index], $client);
 
         // trigger status application:
-        if ($this->getApplication('status') !== false) {
+        if ($this->hasApplication('status')) {
             $this->getApplication('status')->clientDisconnected($clientIp, $clientPort);
         }
         unset($clientId, $clientIp, $clientPort, $resource);
@@ -225,12 +245,14 @@ class Server extends Socket
 
     /**
      * Removes a client and all references in case of timeout/error.
+     *
      * @param Connection $client The client object to remove.
+     * @return void
      */
-    public function removeClientOnError(Connection $client)
+    public function removeClientOnError(Connection $client): void
     {
         // remove reference in clients app:
-        if ($client->getClientApplication() !== false) {
+        if ($client->getClientApplication() !== null) {
             $client->getClientApplication()->onDisconnect($client);
         }
 
@@ -247,7 +269,7 @@ class Server extends Socket
         unset($this->allsockets[$index], $client);
 
         // trigger status application:
-        if ($this->getApplication('status') !== false) {
+        if ($this->hasApplication('status')) {
             $this->getApplication('status')->clientDisconnected($clientIp, $clientPort);
         }
         unset($resource, $clientId, $clientIp, $clientPort);
@@ -260,7 +282,7 @@ class Server extends Socket
      * @param string $domain The origin-domain from websocket handshake.
      * @return bool If domain is allowed to connect method returns true.
      */
-    public function checkOrigin(string $domain)
+    public function checkOrigin(string $domain): bool
     {
         $domain = str_replace('http://', '', $domain);
         $domain = str_replace('https://', '', $domain);
@@ -274,8 +296,9 @@ class Server extends Socket
      * Adds a new ip to ip storage.
      *
      * @param string $ip An ip address.
+     * @return void
      */
-    private function addIpToStorage(string $ip)
+    private function addIpToStorage(string $ip): void
     {
         if (isset($this->ipStorage[$ip])) {
             $this->ipStorage[$ip]++;
@@ -290,7 +313,7 @@ class Server extends Socket
      * @param string $ip An ip address.
      * @return bool True if ip could be removed.
      */
-    private function removeIpFromStorage(string $ip)
+    private function removeIpFromStorage(string $ip): bool
     {
         if (!isset($this->ipStorage[$ip])) {
             return false;
@@ -310,7 +333,7 @@ class Server extends Socket
      * @param string $ip An ip address.
      * @return bool False if ip has reached max. connection limit. True if connection is allowed.
      */
-    private function checkMaxConnectionsPerIp(string $ip)
+    private function checkMaxConnectionsPerIp(string $ip): bool
     {
         if (empty($ip)) {
             return false;
@@ -327,7 +350,7 @@ class Server extends Socket
      * @param string $clientId A client id. (unique client identifier)
      * @return bool True if limit is not yet reached. False if request limit is reached.
      */
-    private function checkRequestLimit(string $clientId)
+    private function checkRequestLimit(string $clientId): bool
     {
         // no data in storage - no danger:
         if (!isset($this->requestStorage[$clientId])) {
@@ -362,7 +385,7 @@ class Server extends Socket
      * @param bool $doOriginCheck
      * @return bool True if value could validated and set successfully.
      */
-    public function setCheckOrigin(bool $doOriginCheck)
+    public function setCheckOrigin(bool $doOriginCheck): bool
     {
         if (is_bool($doOriginCheck) === false) {
             return false;
@@ -375,7 +398,7 @@ class Server extends Socket
      * Return value indicating if client origins are checked.
      * @return bool True if origins are checked.
      */
-    public function getCheckOrigin()
+    public function getCheckOrigin(): bool
     {
         return $this->checkOrigin;
     }
@@ -386,7 +409,7 @@ class Server extends Socket
      * @param string $domain A domain name from which connections to server are allowed.
      * @return bool True if domain was added to storage.
      */
-    public function setAllowedOrigin(string $domain)
+    public function setAllowedOrigin(string $domain): bool
     {
         $domain = str_replace('http://', '', $domain);
         $domain = str_replace('www.', '', $domain);
@@ -404,7 +427,7 @@ class Server extends Socket
      * @param int $limit Connection limit for an ip.
      * @return bool True if value could be set.
      */
-    public function setMaxConnectionsPerIp(int $limit)
+    public function setMaxConnectionsPerIp(int $limit): bool
     {
         if (!is_int($limit)) {
             return false;
@@ -418,7 +441,7 @@ class Server extends Socket
      *
      * @return int Max. simoultanous  allowed connections for an ip to this server.
      */
-    public function getMaxConnectionsPerIp()
+    public function getMaxConnectionsPerIp(): int
     {
         return $this->maxConnectionsPerIp;
     }
@@ -429,7 +452,7 @@ class Server extends Socket
      * @param int $limit Requets/Min limit (per client).
      * @return bool True if value could be set.
      */
-    public function setMaxRequestsPerMinute(int $limit)
+    public function setMaxRequestsPerMinute(int $limit): bool
     {
         if (!is_int($limit)) {
             return false;
@@ -445,7 +468,7 @@ class Server extends Socket
      * @param int $max Max. total connections to server.
      * @return bool True if value could be set.
      */
-    public function setMaxClients(int $max)
+    public function setMaxClients(int $max): bool
     {
         if ((int)$max === 0) {
             return false;
@@ -459,7 +482,7 @@ class Server extends Socket
      *
      * @return int Max. connections to this server.
      */
-    public function getMaxClients()
+    public function getMaxClients(): int
     {
         return $this->maxClients;
     }

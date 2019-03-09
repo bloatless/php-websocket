@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WebSocket;
 
+
 /**
  * Socket class
  *
@@ -43,8 +44,10 @@ class Socket
      *
      * @param string $host The host/bind address to use
      * @param int $port The actual port to bind on
+     * @throws \RuntimeException
+     * @return void
      */
-    private function createSocket(string $host, int $port)
+    private function createSocket(string $host, int $port): void
     {
         $protocol = 'tcp://';
         $url = $protocol . $host . ':' . $port;
@@ -57,25 +60,31 @@ class Socket
             $this->context
         );
         if ($this->master === false) {
-            die('Error creating socket: ' . $err);
+            throw new \RuntimeException('Error creating socket: ' . $err);
         }
 
         $this->allsockets[] = $this->master;
     }
 
-    // method originally found in phpws project:
-    protected function readBuffer($resource)
+    /**
+     * Reads from stream.
+     *
+     * @param $resource
+     * @throws \RuntimeException
+     * @return string
+     */
+    protected function readBuffer($resource): string
     {
         $buffer = '';
         $buffsize = 8192;
         $metadata['unread_bytes'] = 0;
         do {
             if (feof($resource)) {
-                return false;
+                throw new \RuntimeException('Could not read from stream.');
             }
             $result = fread($resource, $buffsize);
             if ($result === false || feof($resource)) {
-                return false;
+                throw new \RuntimeException('Could not read from stream.');
             }
             $buffer .= $result;
             $metadata = stream_get_meta_data($resource);
@@ -85,18 +94,30 @@ class Socket
         return $buffer;
     }
 
-    // method originally found in phpws project:
-    public function writeBuffer($resource, string $string)
+    /**
+     * Write to stream.
+     *
+     * @param $resource
+     * @param string $string
+     * @return int
+     */
+    public function writeBuffer($resource, string $string): int
     {
         $stringLength = strlen($string);
+        if ($stringLength === 0) {
+            return 0;
+        }
+
         for ($written = 0; $written < $stringLength; $written += $fwrite) {
             $fwrite = @fwrite($resource, substr($string, $written));
             if ($fwrite === false) {
-                return false;
-            } elseif ($fwrite === 0) {
-                return false;
+                throw new \RuntimeException('Could not write to stream.');
+            }
+            if ($fwrite === 0) {
+                throw new \RuntimeException('Could not write to stream.');
             }
         }
+
         return $written;
     }
 }

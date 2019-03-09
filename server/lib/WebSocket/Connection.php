@@ -91,14 +91,17 @@ class Connection
 
         // check for valid application:
         $path = $matches[1];
-        $this->application = $this->server->getApplication(substr($path, 1));
-        if (!$this->application) {
+        $applicationKey = substr($path, 1);
+
+        if ($this->server->hasApplication($applicationKey) === false) {
             $this->log('Invalid application: ' . $path);
             $this->sendHttpResponse(404);
             stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
             $this->server->removeClientOnError($this);
             return false;
         }
+
+        $this->application = $this->server->getApplication($applicationKey);
 
         // generate headers array:
         $headers = [];
@@ -150,15 +153,18 @@ class Connection
             $response .= "Sec-WebSocket-Protocol: " . substr($path, 1) . "\r\n";
         }
         $response .= "\r\n";
-        if (false === ($this->server->writeBuffer($this->socket, $response))) {
+        try {
+            $this->server->writeBuffer($this->socket, $response);
+        } catch (\RuntimeException $e) {
             return false;
         }
+
         $this->handshaked = true;
         $this->log('Handshake sent');
         $this->application->onConnect($this);
 
         // trigger status application:
-        if ($this->server->getApplication('status') !== false) {
+        if ($this->server->hasApplication('status')) {
             $this->server->getApplication('status')->clientConnected($this->ip, $this->port);
         }
 
@@ -186,19 +192,23 @@ class Connection
                 break;
         }
         $httpHeader .= "\r\n";
-        $this->server->writeBuffer($this->socket, $httpHeader);
+        try {
+            $this->server->writeBuffer($this->socket, $httpHeader);
+        } catch (\RuntimeException $e) {
+            // @todo Handle write to socket error
+        }
     }
 
-    public function onData(string $data)
+    public function onData(string $data): void
     {
         if ($this->handshaked) {
-            return $this->handle($data);
+            $this->handle($data);
         } else {
             $this->handshake($data);
         }
     }
 
-    private function handle(string $data)
+    private function handle(string $data): bool
     {
         if ($this->waitingForData === true) {
             $data = $this->dataBuffer . $data;
@@ -208,7 +218,7 @@ class Connection
 
         $decodedData = $this->hybi10Decode($data);
 
-        if ($decodedData === false) {
+        if (empty($decodedData)) {
             $this->waitingForData = true;
             $this->dataBuffer .= $data;
             return false;
@@ -218,7 +228,7 @@ class Connection
         }
 
         // trigger status application:
-        if ($this->server->getApplication('status') !== false) {
+        if ($this->server->hasApplication('status')) {
             $this->server->getApplication('status')->clientActivity($this->port);
         }
 
@@ -258,17 +268,21 @@ class Connection
      * @param bool $masked
      * @return bool
      */
-    public function send(string $payload, string $type = 'text', bool $masked = false)
+    public function send(string $payload, string $type = 'text', bool $masked = false): bool
     {
-        $encodedData = $this->hybi10Encode($payload, $type, $masked);
-        if (!$this->server->writeBuffer($this->socket, $encodedData)) {
+
+        try {
+            $encodedData = $this->hybi10Encode($payload, $type, $masked);
+            $this->server->writeBuffer($this->socket, $encodedData);
+        } catch (\RuntimeException $e) {
             $this->server->removeClientOnError($this);
             return false;
         }
+
         return true;
     }
 
-    public function close(int $statusCode = 1000)
+    public function close(int $statusCode = 1000): void
     {
         $payload = str_split(sprintf('%016b', $statusCode), 8);
         $payload[0] = chr(bindec($payload[0]));
@@ -300,7 +314,7 @@ class Connection
         }
 
         if ($this->send($payload, 'close', false) === false) {
-            return false;
+            return;
         }
 
         if ($this->application) {
@@ -311,21 +325,20 @@ class Connection
     }
 
 
-    public function onDisconnect()
+    public function onDisconnect(): void
     {
         $this->log('Disconnected', 'info');
         $this->close(1000);
     }
 
-    public function log(string $message, string $type = 'info')
+    public function log(string $message, string $type = 'info'): void
     {
         $this->server->log('[client ' . $this->ip . ':' . $this->port . '] ' . $message, $type);
     }
 
-    private function hybi10Encode(string $payload, string $type = 'text', bool $masked = true)
+    private function hybi10Encode(string $payload, string $type = 'text', bool $masked = true): string
     {
         $frameHead = [];
-        $frame = '';
         $payloadLength = strlen($payload);
 
         switch ($type) {
@@ -360,7 +373,7 @@ class Connection
             // most significant bit MUST be 0 (close connection if frame too big)
             if ($frameHead[2] > 127) {
                 $this->close(1004);
-                return false;
+                throw new \RuntimeException('Invalid payload. Could not encode frame.');
             }
         } elseif ($payloadLength > 125) {
             $payloadLengthBin = str_split(sprintf('%016b', $payloadLength), 8);
@@ -387,7 +400,6 @@ class Connection
         $frame = implode('', $frameHead);
 
         // append payload to frame:
-        $framePayload = [];
         for ($i = 0; $i < $payloadLength; $i++) {
             $frame .= ($masked === true) ? $payload[$i] ^ $mask[$i % 4] : $payload[$i];
         }
@@ -395,10 +407,8 @@ class Connection
         return $frame;
     }
 
-    private function hybi10Decode(string $data)
+    private function hybi10Decode(string $data): array
     {
-        $payloadLength = '';
-        $mask = '';
         $unmaskedPayload = '';
         $decodedData = [];
 
@@ -465,7 +475,7 @@ class Connection
          * data is transferd.
          */
         if (strlen($data) < $dataLength) {
-            return false;
+            return [];
         }
 
         if ($isMasked === true) {
@@ -484,17 +494,17 @@ class Connection
         return $decodedData;
     }
 
-    public function getClientIp()
+    public function getClientIp(): string
     {
         return $this->ip;
     }
 
-    public function getClientPort()
+    public function getClientPort(): int
     {
         return $this->port;
     }
 
-    public function getClientId()
+    public function getClientId(): string
     {
         return $this->connectionId;
     }
@@ -504,8 +514,8 @@ class Connection
         return $this->socket;
     }
 
-    public function getClientApplication()
+    public function getClientApplication(): ?ApplicationInterface
     {
-        return (isset($this->application)) ? $this->application : false;
+        return $this->application;
     }
 }
