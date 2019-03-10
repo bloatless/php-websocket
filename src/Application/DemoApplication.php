@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace WebSocket\Application;
+namespace Bloatless\WebSocket\Application;
 
-use WebSocket\Connection;
+use Bloatless\WebSocket\Connection;
 
 /**
  * Websocket-Server demo and test application.

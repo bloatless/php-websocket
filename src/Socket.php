@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace WebSocket;
+namespace Bloatless\WebSocket;
 
 /**
  * Socket class

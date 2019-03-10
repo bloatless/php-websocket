@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace WebSocket\Application;
+namespace Bloatless\WebSocket\Application;
 
 /**
  * WebSocket Server Application

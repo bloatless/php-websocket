@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace WebSocket;
+namespace Bloatless\WebSocket;
 
-use WebSocket\Application\ApplicationInterface;
+use Bloatless\WebSocket\Application\ApplicationInterface;
 
 /**
  * WebSocket Connection class

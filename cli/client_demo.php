@@ -2,13 +2,13 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require_once 'lib/class.websocket_client.php';
+require_once __DIR__ . '/../src/Client.php';
 
 $clients = [];
 $testClients = 30;
 $testMessages = 500;
 for ($i = 0; $i < $testClients; $i++) {
-    $clients[$i] = new WebsocketClient;
+    $clients[$i] = new \Bloatless\WebSocket\Client;
     $clients[$i]->connect('127.0.0.1', 8000, '/demo', 'foo.lh');
 }
 usleep(5000);
