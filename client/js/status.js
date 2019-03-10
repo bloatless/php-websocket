@@ -1,21 +1,127 @@
 (function() {
-    $(document).ready(function() {
-        var clientActivity, clientConnected, clientDisconnected, log, refreshServerinfo, serverUrl, socket, statusMsg;
-        log = function(msg) {
-            return $('#log').prepend(`${msg}<br />`);
+    document.addEventListener("DOMContentLoaded", () => {
+
+        const elLog = document.getElementById('log');
+        const elStatus = document.getElementById('status');
+        const elClientList = document.getElementById('clientListSelect');
+        const elClientCount = document.getElementById('clientCount');
+        const elMaxClients = document.getElementById('maxClients');
+        const elMaxConnections = document.getElementById('maxConnections');
+        const elMaxRequetsPerMinute = document.getElementById('maxRequetsPerMinute');
+
+        /**
+         * Adds a new log message.
+         * @param {string} msg
+         */
+        const log = (msg) => {
+            return elLog.insertAdjacentHTML('afterbegin', `${msg}<br />`);
         };
-        serverUrl = 'ws://localhost:8000/status';
+
+        /**
+         * Adds new info or warning message.
+         * @param {Object} msgData
+         * @returns {*}
+         */
+        const statusMsg = (msgData) => {
+            switch (msgData.type) {
+                case "info":
+                    return log(msgData.text);
+                case "warning":
+                    return log(`<span class="warning">${msgData.text}</span>`);
+            }
+        };
+
+        /**
+         * Adds new client to the list (on connection).
+         * @param {Object} data
+         */
+        const clientConnected = (data) => {
+            elClientList.append(new Option(`${data.ip}:${data.port}`, data.port));
+            elClientCount.textContent = data.clientCount;
+        };
+
+        /**
+         * Removes client from list when disconnected.
+         * @param {Object} data
+         */
+        const clientDisconnected = (data) => {
+            [...elClientList.options].some((option, index) => {
+                if (parseInt(option.value) === data.port) {
+                    elClientList.options[index].remove();
+                    return true;
+                }
+            });
+            elClientCount.textContent = data.clientCount;
+        };
+
+        /**
+         * Updates server data.
+         * @param {Object} serverinfo
+         */
+        const refreshServerinfo = (serverinfo) => {
+            elClientCount.textContent = serverinfo.clientCount;
+            elMaxClients.textContent = serverinfo.maxClients;
+            elMaxConnections.textContent = serverinfo.maxConnectionsPerIp;
+            elMaxRequetsPerMinute.textContent = serverinfo.maxRequetsPerMinute;
+            for (let port in serverinfo.clients) {
+                let ip = serverinfo.clients[port];
+                elClientList.append(new Option(ip + ':' + port, port));
+            }
+        };
+
+        /**
+         * Indicate client activity by animating/blinking entry in clients-list.
+         * @param {int} port
+         */
+        const clientActivity = (port) => {
+            [...elClientList.options].some((option, index) => {
+                if (parseInt(option.value) === port) {
+                    elClientList.options[index].style.color = 'red';
+                    setTimeout(() => {
+                        if (elClientList.options[index]) {
+                            elClientList.options[index].style.color = 'black';
+                        }
+                    }, 600);
+                }
+            });
+        };
+
+        // Connect to websocket server
+        let socket = null;
+        const serverUrl = 'ws://localhost:8000/status';
         if (window.MozWebSocket) {
             socket = new MozWebSocket(serverUrl);
         } else if (window.WebSocket) {
             socket = new WebSocket(serverUrl);
         }
-        socket.onopen = function(msg) {
-            return $('#status').removeClass().addClass('online').html('connected');
+
+        /**
+         * Called when connected to websocket server.
+         * @param {Object} msg
+         */
+        socket.onopen = (msg) => {
+            elStatus.classList.remove('offline');
+            elStatus.classList.add('online');
+            elStatus.innerText = 'connected';
         };
-        socket.onmessage = function(msg) {
-            var response;
-            response = JSON.parse(msg.data);
+
+        /**
+         * Called when disconnected from websocket server.
+         * @param {Object} msg
+         */
+        socket.onclose = (msg) => {
+            elStatus.classList.remove('online');
+            elStatus.classList.add('offline');
+            elStatus.innerText = 'disconnected';
+        };
+
+        /**
+         * Called when a message is received from websocket server.
+         * @param {Object} msg
+         * @returns {*}
+         */
+        socket.onmessage = (msg) => {
+            let response = JSON.parse(msg.data);
             switch (response.action) {
                 case "statusMsg":
                     return statusMsg(response.data);
@@ -29,49 +135,12 @@
                     return refreshServerinfo(response.data);
             }
         };
-        socket.onclose = function(msg) {
-            return $('#status').removeClass().addClass('offline').html('disconnected');
-        };
-        $('#status').click(function() {
+
+        /**
+         * Add event listener to satus indicator.
+         */
+        elStatus.addEventListener('click', () => {
             return socket.close();
         });
-        statusMsg = function(msgData) {
-            switch (msgData.type) {
-                case "info":
-                    return log(msgData.text);
-                case "warning":
-                    return log(`<span class="warning">${msgData.text}</span>`);
-            }
-        };
-        clientConnected = function(data) {
-            $('#clientListSelect').append(new Option(`${data.ip}:${data.port}`, data.port));
-            return $('#clientCount').text(data.clientCount);
-        };
-        clientDisconnected = function(data) {
-            $(`#clientListSelect option[value='${data.port}']`).remove();
-            return $('#clientCount').text(data.clientCount);
-        };
-        refreshServerinfo = function(serverinfo) {
-            var ip, port, ref, results;
-            $('#clientCount').text(serverinfo.clientCount);
-            $('#maxClients').text(serverinfo.maxClients);
-            $('#maxConnections').text(serverinfo.maxConnectionsPerIp);
-            $('#maxRequetsPerMinute').text(serverinfo.maxRequetsPerMinute);
-            ref = serverinfo.clients;
-            results = [];
-            for (port in ref) {
-                ip = ref[port];
-                results.push($('#clientListSelect').append(new Option(ip + ':' + port, port)));
-            }
-            return results;
-        };
-        return clientActivity = function(port) {
-            return $(`#clientListSelect option[value='${port}']`).css("color", "red").animate({
-                opacity: 100
-            }, 600, function() {
-                return $(this).css("color", "black");
-            });
-        };
     });
-
-}).call(this);
+}).call();
