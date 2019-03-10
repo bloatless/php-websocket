@@ -6,12 +6,6 @@ namespace Bloatless\WebSocket;
 
 use Bloatless\WebSocket\Application\ApplicationInterface;
 
-/**
- * WebSocket Connection class
- *
- * @author Nico Kaiser <nico@kaiser.me>
- * @author Simon Samtleben <web@lemmingzshadow.net>
- */
 class Connection
 {
     public $waitingForData = false;

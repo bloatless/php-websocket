@@ -6,12 +6,6 @@ namespace Bloatless\WebSocket\Application;
 
 use Bloatless\WebSocket\Connection;
 
-/**
- * Shiny WSS Status Application
- * Provides live server infos/messages to client/browser.
- *
- * @author Simon Samtleben <web@lemmingzshadow.net>
- */
 class StatusApplication extends Application
 {
     /**

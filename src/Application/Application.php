@@ -4,11 +4,6 @@ declare(strict_types=1);
 
 namespace Bloatless\WebSocket\Application;
 
-/**
- * WebSocket Server Application
- *
- * @author Nico Kaiser <nico@kaiser.me>
- */
 abstract class Application implements ApplicationInterface
 {
     /**

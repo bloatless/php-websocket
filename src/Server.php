@@ -7,10 +7,11 @@ namespace Bloatless\WebSocket;
 use Bloatless\WebSocket\Application\ApplicationInterface;
 
 /**
- * Shiny WSS
+ * Simple WebSocket server implementation in PHP.
  *
+ * @author Simon Samtleben <foo@bloatless.org>
  * @author Nico Kaiser <nico@kaiser.me>
- * @author Simon Samtleben <web@lemmingzshadow.net>
+ * @version 2.0
  */
 class Server extends Socket
 {

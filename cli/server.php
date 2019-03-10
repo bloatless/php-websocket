@@ -1,8 +1,5 @@
 <?php
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 require __DIR__ . '/../src/Connection.php';
 require __DIR__ . '/../src/Socket.php';
 require __DIR__ . '/../src/Server.php';

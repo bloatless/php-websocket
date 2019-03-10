@@ -4,13 +4,6 @@ declare(strict_types=1);
 
 namespace Bloatless\WebSocket;
 
-/**
- * Socket class
- *
- * @author Moritz Wutz <moritzwutz@gmail.com>
- * @author Nico Kaiser <nico@kaiser.me>
- * @version 0.2
- */
 class Socket
 {
     /**

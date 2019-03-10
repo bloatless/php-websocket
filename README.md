@@ -1,39 +1,81 @@
-PHP WebSocket
-=============
-A websocket server implemented in php.
+<p align="center">
+    <img src="https://bloatless.org/img/logo.svg" width="60px" height="80px">
+</p>
 
-- Supports websocket draft hybi-10,13 (Currently tested with Chrome 18 and Firefox 11).
-- Supports origin-check.
-- Supports various security/performance settings.
-- Supports binary frames. (Currently receive only)
-- Supports wss. (Needs valid certificate in Firefox.)
-- Application module, the server can be extended by custom behaviors.
+<h1 align="center">Bloatless PHP WebSockets</h1>
 
-## Bugs/Todos/Hints
-- Add support for fragmented frames.
+<p align="center">
+    Simple WebSocket server and client implemented in PHP.
+</p>
 
-## Server example
+## About
 
-This creates a server on localhost:8000 with one Application that listens on `ws://localhost:8000/demo`:
+This application is an extremely simple implementation of the [WebSocket Protocol](https://tools.ietf.org/html/rfc6455)
+in PHP. It includes a server as well as a client. This implementation is optimal to get started with WebSockets and
+learn something. As soon as you want to create a full featured websocket based application you might want to switch
+to more sophisticated solution.
 
-	$server = new \WebSocket\Server('127.0.0.1', 8000, false); // host,port,ssl
+## Installation
 
-	// server settings:	
-	$server->setCheckOrigin(true);
-	$server->setAllowedOrigin('foo.lh');
-	$server->setMaxClients(100);
-	$server->setMaxConnectionsPerIp(20);
-	$server->setMaxRequestsPerMinute(1000);
+Clone or download the repository to your server.
 
-	$server->registerApplication('demo', \WebSocket\Application\DemoApplication::getInstance());
-	$server->run();
+### Requirements
 
-## Libraries used
+* PHP >= 7.2 
 
-- [SplClassLoader](http://gist.github.com/221634) by the PHP Standards Working Group
-- [jQuery](http://jquery.com/)
-- [CoffeeScript PHP] (https://github.com/alxlit/coffeescript-php)
+Hint: You can use version 1.0 if you're still on PHP5.
 
-## Demo
 
-- Check out http://jitt.li for a sample-project using this websocket server.
+## Usage
+
+* Adjust `cli/server.php` to your requirements.
+* Run: `php cli/server.php`
+
+This will start a websocket server. (By default on localhost:8000)
+
+### Server example
+
+This will create a websocket server listening on port 8000.
+
+There a two applications registred to the server. The demo application will be available at `ws://localhost:8000/demo`
+and the status application will be available at `ws://localhost:8000/status`.
+
+```php
+// Require neccessary files here...
+
+$server = new \Bloatless\WebSocket\Server('127.0.0.1', 8000);
+
+// Server settings:
+$server->setMaxClients(100);
+$server->setCheckOrigin(false);
+$server->setAllowedOrigin('foo.lh');
+$server->setMaxConnectionsPerIp(100);
+$server->setMaxRequestsPerMinute(2000);
+
+// Add your applications here:
+$server->registerApplication('status', \Bloatless\WebSocket\Application\StatusApplication::getInstance());
+$server->registerApplication('demo', \Bloatless\WebSocket\Application\DemoApplication::getInstance());
+
+$server->run();
+
+```
+
+### Client example
+
+This creates a WebSocket cliente, connects to a server and sends a message to the server:
+
+```php
+$client = new \Bloatless\WebSocket\Client;
+$client->connect('127.0.0.1', 8000, '/demo', 'foo.lh');
+$client->sendData([
+    'action' => 'echo',
+    'data' => 'Hello Wolrd!'
+]);
+```
+
+### Browser example
+
+The repository contains two demo-pages to call in your browser. You can find them in the `public` folder.
+The `index.html` is a simple application which you can use to send messages to the server.
+
+The `status.html` will display various server information.

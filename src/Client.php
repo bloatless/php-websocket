@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace Bloatless\WebSocket;
 
 /**
- * Very basic websocket client.
- * Supporting draft hybi-10.
+ * Simple WebSocket client.
  *
- * @author Simon Samtleben <web@lemmingzshadow.net>
- * @version 2011-10-18
+ * @author Simon Samtleben <foo@bloatless.org>
+ * @version 2.0
  */
 class Client
 {

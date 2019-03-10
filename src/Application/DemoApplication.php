@@ -6,11 +6,6 @@ namespace Bloatless\WebSocket\Application;
 
 use Bloatless\WebSocket\Connection;
 
-/**
- * Websocket-Server demo and test application.
- *
- * @author Simon Samtleben <web@lemmingzshadow.net>
- */
 class DemoApplication extends Application
 {
     /**
