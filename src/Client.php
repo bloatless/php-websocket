@@ -108,6 +108,10 @@ class Client
         $header .= "Sec-WebSocket-Version: 13\r\n\r\n";
 
         $this->socket = fsockopen($host, $port, $errno, $errstr, 2);
+        if ($this->socket === false) {
+            return false;
+        }
+
         socket_set_timeout($this->socket, 0, 10000);
         @fwrite($this->socket, $header);
         $response = @fread($this->socket, 1500);
