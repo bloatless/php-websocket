@@ -1,0 +1,26 @@
+{
+    "name": "bloatless/php-websocket",
+    "description": "A simple WebSocket Server and Client implementation in PHP.",
+    "keywords": [
+        "php",
+        "websockets",
+        "websocket-server",
+        "bloatless"
+    ],
+    "license": "MIT",
+    "homepage": "https://bloatless.org",
+    "authors": [
+        {
+            "name": "Simon Samtleben",
+            "email": "simon@bloatless.org"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Bloatless\\WebSocket\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.2",
+    }
+}

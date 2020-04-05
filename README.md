@@ -17,7 +17,10 @@ to more sophisticated solution.
 
 ## Installation
 
-Clone or download the repository to your server.
+Clone or download the repository to your server. The package is also installable via composer running the following
+command:
+
+`composer require bloatless/php-websocket`
 
 ### Requirements
 
