@@ -97,7 +97,7 @@ class StatusApplication extends Application
      */
     public function clientConnected(string $ip, int $port): void
     {
-        $this->serverClients[$port] = $ip;
+        $this->serverClients[$ip.":".$port] = date("U");
         $this->serverClientCount++;
         $this->statusMsg('Client connected: ' . $ip . ':' . $port);
         $data = [
@@ -118,10 +118,10 @@ class StatusApplication extends Application
      */
     public function clientDisconnected(string $ip, int $port): void
     {
-        if (!isset($this->serverClients[$port])) {
+        if (!isset($this->serverClients[$ip.":".$port])) {
             return;
         }
-        unset($this->serverClients[$port]);
+        unset($this->serverClients[$ip.":".$port]);
         $this->serverClientCount--;
         $this->statusMsg('Client disconnected: ' . $ip . ':' . $port);
         $data = [
