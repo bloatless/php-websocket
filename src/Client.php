@@ -81,6 +81,53 @@ class Client
     }
 
     /**
+     * wait for data 
+     * added by d.roche@girondenumerique.fr
+     *
+     * @param int $timeout  ( sec )
+     * @return bool
+     */
+    public function wait(int $timeout = null): bool
+    {
+        if ($this->connected === false) {
+            trigger_error("Not connected", E_USER_WARNING);
+            return false;
+        }
+        $rsocks = Array($this->socket);
+        $changed = @stream_select($rsocks, $write = null, $except = null, $timeout);
+        if ( $changed > 0 ) {
+            return(true);
+        } else {
+            return(false);
+        }
+    }
+
+    /**
+     * read data from remote server.
+     * added by d.roche@girondenumerique.fr
+     *
+     * @param int $len
+     * @return string
+     */
+    public function readData(int $len = 4096): string
+    {
+        if ($this->connected === false) {
+            trigger_error("Not connected", E_USER_WARNING);
+            return false;
+        }
+        $ret = '';
+
+        $buffer = fread($this->socket, $len);
+        if ( ! empty($buffer) ) {
+            $decbuff = $this->hybi10Decode($buffer);
+            if ( $decbuff['type'] == "text" ) {
+                    $ret = $decbuff['payload'];
+            }
+        }
+        return $ret;
+    }
+
+    /**
      * Connects to a websocket server.
      *
      * @param string $host
