@@ -46,7 +46,8 @@ class StatusApplication extends Application
     {
         $id = $client->getClientId();
         $this->clients[$id] = $client;
-        $this->sendServerinfo($client);
+        // no longer send serverinfo at connect ( d.roche )
+        //$this->sendServerinfo($client);
     }
 
     /**
@@ -70,7 +71,10 @@ class StatusApplication extends Application
      */
     public function onData(string $data, Connection $client): void
     {
-        // currently not in use...
+        // modified by d.roche to send server info on any received data...
+        foreach ($this->clients as $cli1) {
+            $this->sendServerinfo($cli1);
+        }
     }
 
     /**
