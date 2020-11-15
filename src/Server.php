@@ -499,6 +499,12 @@ class Server extends Socket
         return $this->maxClients;
     }
 
+    /**
+     * Adds a periodic timer.
+     *
+     * @param int $interval Interval in microseconds.
+     * @param callable $task
+     */
     public function addTimer(int $interval, callable $task): void
     {
         $this->timers->addTimer(new Timer($interval, $task));

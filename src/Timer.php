@@ -6,8 +6,19 @@ namespace Bloatless\WebSocket;
 
 final class Timer
 {
+    /**
+     * @var int $interval
+     */
     private $interval;
+
+    /**
+     * @var callable $task
+     */
     private $task;
+
+    /**
+     * @var int $lastRun
+     */
     private $lastRun;
 
     public function __construct(int $interval, callable $task)
@@ -17,6 +28,11 @@ final class Timer
         $this->lastRun = 0;
     }
 
+    /**
+     * Executes the timer if intervall has passed.
+     *
+     * @return void
+     */
     public function run(): void
     {
         $now = round(microtime(true) * 1000);
@@ -25,8 +41,6 @@ final class Timer
         }
 
         $this->lastRun = $now;
-
-        $task = $this->task;
-        $task();
+        call_user_func($this->task);
     }
 }

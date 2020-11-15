@@ -7,7 +7,7 @@ namespace Bloatless\WebSocket;
 final class TimerCollection
 {
     /**
-     * @var Timer[]
+     * @var array $timers
      */
     private $timers;
 
@@ -16,11 +16,19 @@ final class TimerCollection
         $this->timers = $timers;
     }
 
+    /**
+     * Adds a timer.
+     *
+     * @param Timer $timer
+     */
     public function addTimer(Timer $timer)
     {
         $this->timers[] = $timer;
     }
 
+    /**
+     * Executes/runs all timers.
+     */
     public function runAll(): void
     {
         foreach ($this->timers as $timer) {

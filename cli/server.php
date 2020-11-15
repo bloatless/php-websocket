@@ -3,6 +3,8 @@
 require __DIR__ . '/../src/Connection.php';
 require __DIR__ . '/../src/Socket.php';
 require __DIR__ . '/../src/Server.php';
+require __DIR__ . '/../src/Timer.php';
+require __DIR__ . '/../src/TimerCollection.php';
 
 require __DIR__ . '/../src/Application/ApplicationInterface.php';
 require __DIR__ . '/../src/Application/Application.php';
