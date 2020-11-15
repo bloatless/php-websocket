@@ -61,6 +61,11 @@ class Server extends Socket
     private $maxRequestsPerMinute = 50;
 
     /**
+     * @var TimerCollection $timers
+     */
+    private $timers;
+
+    /**
      * @param string $host
      * @param int $port
      */
@@ -68,6 +73,7 @@ class Server extends Socket
     {
         parent::__construct($host, $port);
         $this->log('Server created');
+        $this->timers = new TimerCollection();
     }
 
     /**
@@ -90,6 +96,8 @@ class Server extends Socket
     public function run(): void
     {
         while (true) {
+            $this->timers->runAll();
+          
             $changed_sockets = $this->allsockets;
             @stream_select($changed_sockets, $write, $except, 0, 5000);
             foreach ($changed_sockets as $socket) {
@@ -489,5 +497,10 @@ class Server extends Socket
     public function getMaxClients(): int
     {
         return $this->maxClients;
+    }
+
+    public function addTimer(int $interval, callable $task): void
+    {
+        $this->timers->addTimer(new Timer($interval, $task));
     }
 }
