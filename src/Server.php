@@ -96,9 +96,10 @@ class Server extends Socket
     public function run(): void
     {
         while (true) {
-            $changed_sockets = $this->allsockets;
-            @stream_select($changed_sockets, $write = null, $except = null, 0, 5000);
             $this->timers->runAll();
+          
+            $changed_sockets = $this->allsockets;
+            @stream_select($changed_sockets, $write, $except, 0, 5000);
             foreach ($changed_sockets as $socket) {
                 if ($socket == $this->master) {
                     if (($ressource = stream_socket_accept($this->master)) === false) {
