@@ -36,7 +36,7 @@
          * @param {Object} data
          */
         const clientConnected = (data) => {
-            elClientList.append(new Option(`${data.ip}:${data.port}`, data.port));
+            elClientList.append(new Option(data.client, data.client));
             elClientCount.textContent = data.clientCount;
         };
 
@@ -46,7 +46,7 @@
          */
         const clientDisconnected = (data) => {
             [...elClientList.options].some((option, index) => {
-                if (parseInt(option.value) === data.port) {
+                if (option.value === data.client) {
                     elClientList.options[index].remove();
                     return true;
                 }
@@ -63,19 +63,21 @@
             elMaxClients.textContent = serverinfo.maxClients;
             elMaxConnections.textContent = serverinfo.maxConnectionsPerIp;
             elMaxRequetsPerMinute.textContent = serverinfo.maxRequetsPerMinute;
-            for (let port in serverinfo.clients) {
-                let ip = serverinfo.clients[port];
-                elClientList.append(new Option(ip + ':' + port, port));
+            for (let client in serverinfo.clients) {
+                if (!serverinfo.clients.hasOwnProperty(client)) {
+                    continue;
+                }
+                elClientList.append(new Option(client, client));
             }
         };
 
         /**
          * Indicate client activity by animating/blinking entry in clients-list.
-         * @param {int} port
+         * @param {string} port
          */
-        const clientActivity = (port) => {
+        const clientActivity = (client) => {
             [...elClientList.options].some((option, index) => {
-                if (parseInt(option.value) === port) {
+                if (option.value === client) {
                     elClientList.options[index].style.color = 'red';
                     setTimeout(() => {
                         if (elClientList.options[index]) {

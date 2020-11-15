@@ -249,7 +249,8 @@ class Connection
 
         // trigger status application:
         if ($this->server->hasApplication('status')) {
-            $this->server->getApplication('status')->clientActivity($this->port);
+            $client = $this->ip . ':' . $this->port;
+            $this->server->getApplication('status')->clientActivity($client);
         }
 
         if (!isset($decodedData['type'])) {
