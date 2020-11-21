@@ -66,6 +66,16 @@ class Server extends Socket
     private $timers;
 
     /**
+     * @var String $logDirectory
+     */
+    private $logDirectory = __DIR__.'/../log';
+
+    /**
+     * @var boolval $logFileMode
+     */
+    private $logFileMode = false;
+
+    /**
      * @param string $host
      * @param int $port
      */
@@ -97,7 +107,7 @@ class Server extends Socket
     {
         while (true) {
             $this->timers->runAll();
-          
+
             $changed_sockets = $this->allsockets;
             @stream_select($changed_sockets, $write, $except, 0, 5000);
             foreach ($changed_sockets as $socket) {
@@ -224,7 +234,28 @@ class Server extends Socket
      */
     public function log(string $message, string $type = 'info'): void
     {
-        echo date('Y-m-d H:i:s') . ' [' . ($type ? $type : 'error') . '] ' . $message . PHP_EOL;
+        $logMessage = date('Y-m-d H:i:s') . ' [' . ($type ? $type : 'error') . '] ' . $message . PHP_EOL;
+        echo $logMessage;
+
+        if($this->logFileMode) {
+            $logFile = $this->logDirectory . '/' . date("Y-m-d") . '.txt';
+
+            if(!is_dir($this->logDirectory)) {
+                mkdir($this->logDirectory);
+            }
+
+            if(is_writable($this->logDirectory)) {
+                if((file_exists($logFile) && is_writable($logFile)) || !file_exists($logFile)) {
+                    $file = fopen($logFile, 'a');
+                    fwrite($file, $logMessage);
+                    fclose($file);
+                } else {
+                    echo date('Y-m-d H:i:s') . ' [error] ' . 'Log file is not writable.' . PHP_EOL;
+                }
+            } else {
+                echo date('Y-m-d H:i:s') . ' [error] ' . 'Log directory is not writable.' . PHP_EOL;
+            }
+        }
     }
 
     /**
@@ -508,5 +539,21 @@ class Server extends Socket
     public function addTimer(int $interval, callable $task): void
     {
         $this->timers->addTimer(new Timer($interval, $task));
+    }
+
+    /**
+     * Sets log mode, true if would like save log to file (default is false - just stdout)
+     *
+     * @param bool $mode Mode. True/false (default is false)
+     * @return bool True if value could be set.
+     */
+    public function setLogFileMode(bool $mode): bool
+    {
+        if (is_bool($mode) === false) {
+            return false;
+        }
+
+        $this->logFileMode = $mode;
+        return true;
     }
 }
