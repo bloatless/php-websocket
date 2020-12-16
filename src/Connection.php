@@ -109,13 +109,13 @@ class Connection
         foreach ($lines as $line) {
             $line = chop($line);
             if (preg_match('/\A(\S+): (.*)\z/', $line, $matches)) {
-                $headers[$matches[1]] = $matches[2];
+                $headers[ strtolower( $matches[1] )] = $matches[2];
             }
         }
 
         // check for supported websocket version:
-        if (!isset($headers['Sec-WebSocket-Version']) || $headers['Sec-WebSocket-Version'] < 6) {
-            $this->log('Unsupported websocket version.');
+        if (!isset($headers['sec-websocket-version']) || $headers['sec-websocket-version'] < 6) {
+            $this->log('Unsupported websocket version.' );
             $this->sendHttpResponse(501);
             stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
             $this->server->removeClientOnError($this);
@@ -124,8 +124,8 @@ class Connection
 
         // check origin:
         if ($this->server->getCheckOrigin() === true) {
-            $origin = (isset($headers['Sec-WebSocket-Origin'])) ? $headers['Sec-WebSocket-Origin'] : '';
-            $origin = (isset($headers['Origin'])) ? $headers['Origin'] : $origin;
+            $origin = (isset($headers['sec-websocket-origin'])) ? $headers['sec-websocket-origin'] : '';
+            $origin = (isset($headers['origin'])) ? $headers['origin'] : $origin;
             if (empty($origin)) {
                 $this->log('No origin provided.');
                 $this->sendHttpResponse(401);
@@ -144,13 +144,13 @@ class Connection
         }
 
         // do handyshake: (hybi-10)
-        $secKey = $headers['Sec-WebSocket-Key'];
+        $secKey = $headers['sec-websocket-key'];
         $secAccept = base64_encode(pack('H*', sha1($secKey . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
         $response = "HTTP/1.1 101 Switching Protocols\r\n";
         $response .= "Upgrade: websocket\r\n";
         $response .= "Connection: Upgrade\r\n";
         $response .= "Sec-WebSocket-Accept: " . $secAccept . "\r\n";
-        if (isset($headers['Sec-WebSocket-Protocol']) && !empty($headers['Sec-WebSocket-Protocol'])) {
+        if (isset($headers['sec-websocket-protocol']) && !empty($headers['sec-websocket-protocol'])) {
             $response .= "Sec-WebSocket-Protocol: " . substr($path, 1) . "\r\n";
         }
         $response .= "\r\n";

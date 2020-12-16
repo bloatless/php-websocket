@@ -116,7 +116,7 @@ class Client
         @fwrite($this->socket, $header);
         $response = @fread($this->socket, 1500);
 
-        preg_match('#Sec-WebSocket-Accept:\s(.*)$#mU', $response, $matches);
+        preg_match('#Sec-WebSocket-Accept:\s(.*)$#mUi', (string)$response, $matches);
 
         if ($matches) {
             $keyAccept = trim($matches[1]);
