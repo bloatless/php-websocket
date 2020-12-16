@@ -23,7 +23,7 @@ class Socket
 
     public function __construct(string $host = 'localhost', int $port = 8000)
     {
-        ob_implicit_flush();
+        ob_implicit_flush(); // php7.x -> int, php8.x => bool, default 1 or true
         $this->createSocket($host, $port);
     }
 
