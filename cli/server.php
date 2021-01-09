@@ -1,6 +1,8 @@
 <?php
 
 require __DIR__ . '/../src/Connection.php';
+require __DIR__ . '/../src/IPCPayload.php';
+require __DIR__ . '/../src/IPCPayloadFactory.php';
 require __DIR__ . '/../src/Server.php';
 require __DIR__ . '/../src/Timer.php';
 require __DIR__ . '/../src/TimerCollection.php';
@@ -10,7 +12,7 @@ require __DIR__ . '/../src/Application/Application.php';
 require __DIR__ . '/../src/Application/DemoApplication.php';
 require __DIR__ . '/../src/Application/StatusApplication.php';
 
-$server = new \Bloatless\WebSocket\Server('127.0.0.1', 8000);
+$server = new \Bloatless\WebSocket\Server('127.0.0.1', 8000, '/tmp/phpwss.sock');
 
 // server settings:
 $server->setMaxClients(100);

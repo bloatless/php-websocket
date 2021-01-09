@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bloatless\WebSocket\Application;
 
 use Bloatless\WebSocket\Connection;
+use Bloatless\WebSocket\IPCPayload;
 
 interface ApplicationInterface
 {
@@ -23,12 +24,19 @@ interface ApplicationInterface
     public function onDisconnect(Connection $connection): void;
 
     /**
-     * This method is triggered when the server recieves new data.
+     * This method is triggered when the server recieves new data from a client.
      *
      * @param string $data
      * @param Connection $client
      */
     public function onData(string $data, Connection $client): void;
+
+    /**
+     * This method is called when server recieves to for an application on the IPC socket.
+     *
+     * @param array $data
+     */
+    public function onIPCData(array $data): void;
 
     /**
      * Creates and returns a new instance of the application.

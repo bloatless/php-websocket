@@ -73,6 +73,11 @@ class StatusApplication extends Application
         // currently not in use...
     }
 
+    public function onIPCData(array $data): void
+    {
+        // TODO: Implement onIPCData() method.
+    }
+
     /**
      * Sets basic server data.
      *

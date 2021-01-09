@@ -1,4 +1,5 @@
 <?php
+/*
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
@@ -24,3 +25,19 @@ for ($i = 0; $i < $testMessages; $i++) {
     usleep(5000);
 }
 usleep(5000);
+    */
+
+
+require __DIR__ . '/../src/IPCPayloadFactory.php';
+require __DIR__ . '/../src/IPCPayload.php';
+
+$payload = \Bloatless\WebSocket\IPCPayloadFactory::makeApplicationPayload('demo', [
+    'action' => 'echo',
+    'data' => 'Hello from the IPC Socket!',
+]);
+
+$dataToSend = $payload->asJson();
+$dataLength = strlen($dataToSend);
+$socket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
+socket_sendto($socket, $dataToSend, $dataLength, MSG_EOF, '/tmp/phpwss.sock', 0);
+socket_close($socket);

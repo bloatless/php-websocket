@@ -58,6 +58,14 @@ class DemoApplication extends Application
         }
     }
 
+    public function onIPCData(array $data): void
+    {
+        $actionName = 'action' . ucfirst($data['action']);
+        if (method_exists($this, $actionName)) {
+            call_user_func([$this, $actionName], $data['data']);
+        }
+    }
+
     /**
      * Echoes data back to client(s).
      *

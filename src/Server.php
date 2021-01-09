@@ -21,6 +21,16 @@ class Server
     protected $master;
 
     /**
+     * @var resource $icpSocket
+     */
+    private $icpSocket;
+
+    /**
+     * @var string $ipcSocketPath
+     */
+    private string $ipcSocketPath;
+
+    /**
      * @var array Holds all connected sockets
      */
     protected array $allsockets = [];
@@ -73,24 +83,18 @@ class Server
     /**
      * @param string $host
      * @param int $port
+     * @param string $ipcSocketPath
      */
-    public function __construct(string $host = 'localhost', int $port = 8000)
-    {
+    public function __construct(
+        string $host = 'localhost',
+        int $port = 8000,
+        string $ipcSocketPath = '/tmp/phpwss.sock'
+    ) {
         ob_implicit_flush(); // php7.x -> int, php8.x => bool, default 1 or true
         $this->createSocket($host, $port);
+        $this->openIPCSocket($ipcSocketPath);
         $this->timers = new TimerCollection();
         $this->log('Server created');
-    }
-
-    /**
-     * Creates a connection from a socket resource
-     *
-     * @param resource $resource A socket resource
-     * @return Connection
-     */
-    protected function createConnection($resource): Connection
-    {
-        return new Connection($this, $resource);
     }
 
     /**
@@ -162,6 +166,8 @@ class Server
                     $client->onData($data);
                 }
             }
+
+            $this->handleIPC();
         }
     }
 
@@ -297,6 +303,17 @@ class Server
         $domain = str_replace('/', '', $domain);
 
         return isset($this->allowedOrigins[$domain]);
+    }
+
+    /**
+     * Creates a connection from a socket resource
+     *
+     * @param resource $resource A socket resource
+     * @return Connection
+     */
+    protected function createConnection($resource): Connection
+    {
+        return new Connection($this, $resource);
     }
 
     /**
@@ -535,5 +552,60 @@ class Server
         }
 
         return $written;
+    }
+
+    /**
+     * Opens a Unix-Domain-Socket to listen for inputs from other applications.
+     *
+     * @param string $ipcSocketPath
+     * @throws \RuntimeException
+     * @return void
+     */
+    private function openIPCSocket(string $ipcSocketPath): void
+    {
+        if (file_exists($ipcSocketPath)) {
+            unlink($ipcSocketPath);
+        }
+        $this->icpSocket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
+        if ($this->icpSocket === false) {
+            throw new \RuntimeException('Could not open ipc socket.');
+        }
+        if (socket_set_nonblock($this->icpSocket) === false) {
+            throw new \RuntimeException('Could not set nonblock mode for ipc socket.');
+        }
+        if (socket_bind($this->icpSocket, $ipcSocketPath) === false) {
+            throw new \RuntimeException('Could not bind to ipc socket.');
+        }
+        $this->ipcSocketPath = $ipcSocketPath;
+    }
+
+    /**
+     * Checks IPC socket for input and processes data.
+     *
+     * @return void
+     */
+    private function handleIPC(): void
+    {
+        $buffer = '';
+        $bytesReceived = socket_recvfrom($this->icpSocket, $buffer, 65536, 0, $this->ipcSocketPath);
+        if ($bytesReceived === false) {
+            return;
+        }
+        if ($bytesReceived <= 0) {
+            return;
+        }
+
+        $payload = IPCPayloadFactory::fromJson($buffer);
+        switch ($payload->type) {
+            case IPCPayload::TYPE_SERVER:
+                // @todo handle server command
+                break;
+            case IPCPayload::TYPE_APPLICATION:
+                $app = $this->getApplication($payload->action);
+                $app->onIPCData($payload->data);
+                break;
+            default:
+                throw new \RuntimeException('Invalid IPC message received.');
+        }
     }
 }
