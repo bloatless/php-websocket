@@ -13,67 +13,73 @@ use Bloatless\WebSocket\Application\ApplicationInterface;
  * @author Nico Kaiser <nico@kaiser.me>
  * @version 2.0
  */
-class Server extends Socket
+class Server
 {
+    /**
+     * @var resource $master Holds the master socket
+     */
+    protected $master;
+
+    /**
+     * @var array Holds all connected sockets
+     */
+    protected array $allsockets = [];
+
+    /**
+     * @var resource $context
+     */
+    protected $context = null;
+
     /**
      * @var array $clients
      */
-    protected $clients = [];
+    protected array $clients = [];
 
     /**
      * @var array $applications
      */
-    protected $applications = [];
+    protected array $applications = [];
 
     /**
      * @var array $ipStorage
      */
-    private $ipStorage = [];
-
-    /**
-     * @var array $requestStorage
-     */
-    private $requestStorage = [];
+    private array $ipStorage = [];
 
     /**
      * @var bool $checkOrigin
      */
-    private $checkOrigin = true;
+    private bool $checkOrigin = true;
 
     /**
      * @var array $allowedOrigins
      */
-    private $allowedOrigins = [];
+    private array $allowedOrigins = [];
 
     /**
      * @var int $maxClients
      */
-    private $maxClients = 30;
+    private int $maxClients = 30;
 
     /**
      * @var int $maxConnectionsPerIp
      */
-    private $maxConnectionsPerIp = 5;
-
-    /**
-     * @var int $maxRequestsPerMinute
-     */
-    private $maxRequestsPerMinute = 50;
+    private int $maxConnectionsPerIp = 5;
 
     /**
      * @var TimerCollection $timers
      */
-    private $timers;
+    private TimerCollection $timers;
 
     /**
      * @param string $host
      * @param int $port
      */
-    public function __construct($host = 'localhost', $port = 8000)
+    public function __construct(string $host = 'localhost', int $port = 8000)
     {
-        parent::__construct($host, $port);
-        $this->log('Server created');
+        ob_implicit_flush(); // php7.x -> int, php8.x => bool, default 1 or true
+        $this->createSocket($host, $port);
         $this->timers = new TimerCollection();
+        $this->log('Server created');
     }
 
     /**
@@ -152,12 +158,8 @@ class Server extends Socket
                         $client->onDisconnect();
                         continue;
                     }
-                    if ($client->waitingForData === false
-                        && $this->checkRequestLimit($client->getClientId()) === false) {
-                        $client->onDisconnect();
-                    } else {
-                        $client->onData($data);
-                    }
+
+                    $client->onData($data);
                 }
             }
         }
@@ -209,7 +211,6 @@ class Server extends Socket
             $serverInfo = array(
                 'maxClients' => $this->maxClients,
                 'maxConnectionsPerIp' => $this->maxConnectionsPerIp,
-                'maxRequetsPerMinute' => $this->maxRequestsPerMinute,
             );
             $this->applications[$key]->setServerInfo($serverInfo);
         }
@@ -241,9 +242,6 @@ class Server extends Socket
         $resource = $client->getClientSocket();
 
         $this->removeIpFromStorage($client->getClientIp());
-        if (isset($this->requestStorage[$clientId])) {
-            unset($this->requestStorage[$clientId]);
-        }
         unset($this->clients[(int)$resource]);
         $index = array_search($resource, $this->allsockets);
         unset($this->allsockets[$index], $client);
@@ -273,9 +271,6 @@ class Server extends Socket
         $clientIp = $client->getClientIp();
         $clientPort = $client->getClientPort();
         $this->removeIpFromStorage($client->getClientIp());
-        if (isset($this->requestStorage[$clientId])) {
-            unset($this->requestStorage[$clientId]);
-        }
         unset($this->clients[(int)$resource]);
         $index = array_search($resource, $this->allsockets);
         unset($this->allsockets[$index], $client);
@@ -357,41 +352,6 @@ class Server extends Socket
     }
 
     /**
-     * Checkes if a client has reached its max. requests per minute limit.
-     *
-     * @param string $clientId A client id. (unique client identifier)
-     * @return bool True if limit is not yet reached. False if request limit is reached.
-     */
-    private function checkRequestLimit(string $clientId): bool
-    {
-        // no data in storage - no danger:
-        if (!isset($this->requestStorage[$clientId])) {
-            $this->requestStorage[$clientId] = array(
-                'lastRequest' => time(),
-                'totalRequests' => 1
-            );
-            return true;
-        }
-
-        // time since last request > 1min - no danger:
-        if (time() - $this->requestStorage[$clientId]['lastRequest'] > 60) {
-            $this->requestStorage[$clientId] = array(
-                'lastRequest' => time(),
-                'totalRequests' => 1
-            );
-            return true;
-        }
-
-        // did requests in last minute - check limits:
-        if ($this->requestStorage[$clientId]['totalRequests'] > $this->maxRequestsPerMinute) {
-            return false;
-        }
-
-        $this->requestStorage[$clientId]['totalRequests']++;
-        return true;
-    }
-
-    /**
      * Set whether the client origin should be checked on new connections.
      *
      * @param bool $doOriginCheck
@@ -459,21 +419,6 @@ class Server extends Socket
     }
 
     /**
-     * Sets how many requests a client is allowed to do per minute.
-     *
-     * @param int $limit Requets/Min limit (per client).
-     * @return bool True if value could be set.
-     */
-    public function setMaxRequestsPerMinute(int $limit): bool
-    {
-        if (!is_int($limit)) {
-            return false;
-        }
-        $this->maxRequestsPerMinute = $limit;
-        return true;
-    }
-
-    /**
      * Sets how many clients are allowed to connect to server until no more
      * connections are accepted.
      *
@@ -508,5 +453,87 @@ class Server extends Socket
     public function addTimer(int $interval, callable $task): void
     {
         $this->timers->addTimer(new Timer($interval, $task));
+    }
+
+    /**
+     * Create a socket on given host/port
+     *
+     * @param string $host The host/bind address to use
+     * @param int $port The actual port to bind on
+     * @throws \RuntimeException
+     * @return void
+     */
+    private function createSocket(string $host, int $port): void
+    {
+        $protocol = 'tcp://';
+        $url = $protocol . $host . ':' . $port;
+        $this->context = stream_context_create();
+        $this->master = stream_socket_server(
+            $url,
+            $errno,
+            $err,
+            STREAM_SERVER_BIND | STREAM_SERVER_LISTEN,
+            $this->context
+        );
+        if ($this->master === false) {
+            throw new \RuntimeException('Error creating socket: ' . $err);
+        }
+
+        $this->allsockets[] = $this->master;
+    }
+
+    /**
+     * Reads from stream.
+     *
+     * @param $resource
+     * @throws \RuntimeException
+     * @return string
+     */
+    protected function readBuffer($resource): string
+    {
+        $buffer = '';
+        $buffsize = 8192;
+        $metadata['unread_bytes'] = 0;
+        do {
+            if (feof($resource)) {
+                throw new \RuntimeException('Could not read from stream.');
+            }
+            $result = fread($resource, $buffsize);
+            if ($result === false || feof($resource)) {
+                throw new \RuntimeException('Could not read from stream.');
+            }
+            $buffer .= $result;
+            $metadata = stream_get_meta_data($resource);
+            $buffsize = ($metadata['unread_bytes'] > $buffsize) ? $buffsize : $metadata['unread_bytes'];
+        } while ($metadata['unread_bytes'] > 0);
+
+        return $buffer;
+    }
+
+    /**
+     * Write to stream.
+     *
+     * @param $resource
+     * @param string $string
+     * @return int
+     */
+    public function writeBuffer($resource, string $string): int
+    {
+        $stringLength = strlen($string);
+        if ($stringLength === 0) {
+            return 0;
+        }
+
+        for ($written = 0; $written < $stringLength; $written += $fwrite) {
+            $fwrite = @fwrite($resource, substr($string, $written));
+            if ($fwrite === false) {
+                throw new \RuntimeException('Could not write to stream.');
+            }
+            if ($fwrite === 0) {
+                throw new \RuntimeException('Could not write to stream.');
+            }
+        }
+
+        return $written;
     }
 }

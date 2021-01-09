@@ -9,7 +9,7 @@ abstract class Application implements ApplicationInterface
     /**
      * @var array $instances
      */
-    protected static $instances = [];
+    protected static array $instances = [];
 
     protected function __construct()
     {

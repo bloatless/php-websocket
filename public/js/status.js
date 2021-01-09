@@ -7,7 +7,6 @@
         const elClientCount = document.getElementById('clientCount');
         const elMaxClients = document.getElementById('maxClients');
         const elMaxConnections = document.getElementById('maxConnections');
-        const elMaxRequetsPerMinute = document.getElementById('maxRequetsPerMinute');
 
         /**
          * Adds a new log message.
@@ -62,7 +61,6 @@
             elClientCount.textContent = serverinfo.clientCount;
             elMaxClients.textContent = serverinfo.maxClients;
             elMaxConnections.textContent = serverinfo.maxConnectionsPerIp;
-            elMaxRequetsPerMinute.textContent = serverinfo.maxRequetsPerMinute;
             for (let client in serverinfo.clients) {
                 if (!serverinfo.clients.hasOwnProperty(client)) {
                     continue;

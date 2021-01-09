@@ -8,12 +8,12 @@ use Bloatless\WebSocket\Application\ApplicationInterface;
 
 class Connection
 {
-    public $waitingForData = false;
+    public bool $waitingForData = false;
 
     /**
      * @var Server $server
      */
-    private $server;
+    private Server $server;
 
     /**
      * @var resource $socket
@@ -23,33 +23,33 @@ class Connection
     /**
      * @var bool $handshaked
      */
-    private $handshaked = false;
+    private bool $handshaked = false;
 
 
     /**
      * @var ApplicationInterface $application
      */
-    private $application = null;
+    private ApplicationInterface $application;
 
     /**
      * @var string $ip
      */
-    private $ip;
+    private string $ip;
 
     /**
      * @var int $port
      */
-    private $port;
+    private int $port;
 
     /**
      * @var string $connectionId
      */
-    private $connectionId = '';
+    private string $connectionId = '';
 
     /**
      * @var string $dataBuffer
      */
-    private $dataBuffer = '';
+    private string $dataBuffer = '';
 
     /**
      * @param Server $server
@@ -109,13 +109,13 @@ class Connection
         foreach ($lines as $line) {
             $line = chop($line);
             if (preg_match('/\A(\S+): (.*)\z/', $line, $matches)) {
-                $headers[ strtolower( $matches[1] )] = $matches[2];
+                $headers[ strtolower($matches[1])] = $matches[2];
             }
         }
 
         // check for supported websocket version:
         if (!isset($headers['sec-websocket-version']) || $headers['sec-websocket-version'] < 6) {
-            $this->log('Unsupported websocket version.' );
+            $this->log('Unsupported websocket version.');
             $this->sendHttpResponse(501);
             stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
             $this->server->removeClientOnError($this);

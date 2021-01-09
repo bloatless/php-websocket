@@ -53,7 +53,6 @@ $server->setMaxClients(100);
 $server->setCheckOrigin(false);
 $server->setAllowedOrigin('foo.lh');
 $server->setMaxConnectionsPerIp(100);
-$server->setMaxRequestsPerMinute(2000);
 
 // Add your applications here:
 $server->registerApplication('status', \Bloatless\WebSocket\Application\StatusApplication::getInstance());

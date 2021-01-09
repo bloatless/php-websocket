@@ -11,7 +11,7 @@ class DemoApplication extends Application
     /**
      * @var array $clients
      */
-    private $clients = [];
+    private array $clients = [];
 
     /**
      * Handles new connections to the application.

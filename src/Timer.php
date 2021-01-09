@@ -9,7 +9,7 @@ final class Timer
     /**
      * @var int $interval
      */
-    private $interval;
+    private int $interval;
 
     /**
      * @var callable $task
@@ -17,9 +17,9 @@ final class Timer
     private $task;
 
     /**
-     * @var int $lastRun
+     * @var float $lastRun
      */
-    private $lastRun;
+    private float $lastRun;
 
     public function __construct(int $interval, callable $task)
     {

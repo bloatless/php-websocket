@@ -13,28 +13,28 @@ class StatusApplication extends Application
      *
      * @var array $clients
      */
-    private $clients = [];
+    private array $clients = [];
 
     /**
      * Holds IP/Port information of all clients connected to the server.
      *
      * @var array $serverClients
      */
-    private $serverClients = [];
+    private array $serverClients = [];
 
     /**
      * Basic server infos (like max. clients e.g.)
      *
      * @var array $serverInfo
      */
-    private $serverInfo = [];
+    private array $serverInfo = [];
 
     /**
      * Total number of connected clients.
      *
      * @var int $serverClientCount
      */
-    private $serverClientCount = 0;
+    private int $serverClientCount = 0;
 
     /**
      * Handles new connections to the application.

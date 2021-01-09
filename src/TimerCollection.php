@@ -9,7 +9,7 @@ final class TimerCollection
     /**
      * @var array $timers
      */
-    private $timers;
+    private array $timers;
 
     public function __construct(array $timers = [])
     {
@@ -21,7 +21,7 @@ final class TimerCollection
      *
      * @param Timer $timer
      */
-    public function addTimer(Timer $timer)
+    public function addTimer(Timer $timer): void
     {
         $this->timers[] = $timer;
     }
