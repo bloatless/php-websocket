@@ -75,6 +75,11 @@ class Chat extends Application
         }
     }
 
+    /**
+     * Handles data pushed into the websocket server using the push-client.
+     *
+     * @param array $data
+     */
     public function onIPCData(array $data): void
     {
         $actionName = 'action' . ucfirst($data['action']);

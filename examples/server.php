@@ -21,7 +21,7 @@ $server->setCheckOrigin(false);
 $server->setAllowedOrigin('foo.lh');
 $server->setMaxConnectionsPerIp(100);
 
-// Hint: Status application should not be removed as it displays usefull server informations:
+// add your applications
 $server->registerApplication('status', \Bloatless\WebSocket\Application\StatusApplication::getInstance());
 $server->registerApplication('chat', \Bloatless\WebSocket\Examples\Application\Chat::getInstance());
 
