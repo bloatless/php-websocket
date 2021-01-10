@@ -39,25 +39,25 @@ class StatusApplication extends Application
     /**
      * Handles new connections to the application.
      *
-     * @param Connection $client
+     * @param Connection $connection
      * @return void
      */
-    public function onConnect(Connection $client): void
+    public function onConnect(Connection $connection): void
     {
-        $id = $client->getClientId();
-        $this->clients[$id] = $client;
-        $this->sendServerinfo($client);
+        $id = $connection->getClientId();
+        $this->clients[$id] = $connection;
+        $this->sendServerinfo($connection);
     }
 
     /**
      * Handles client disconnects from the application.
      *
-     * @param Connection $client
+     * @param Connection $connection
      * @return void
      */
-    public function onDisconnect(Connection $client): void
+    public function onDisconnect(Connection $connection): void
     {
-        $id = $client->getClientId();
+        $id = $connection->getClientId();
         unset($this->clients[$id]);
     }
 

@@ -25,11 +25,10 @@ class Connection
      */
     private bool $handshaked = false;
 
-
     /**
-     * @var ApplicationInterface $application
+     * @var ?ApplicationInterface $application
      */
-    private ApplicationInterface $application;
+    private ?ApplicationInterface $application = null;
 
     /**
      * @var string $ip
@@ -44,7 +43,7 @@ class Connection
     /**
      * @var string $connectionId
      */
-    private string $connectionId = '';
+    private string $connectionId;
 
     /**
      * @var string $dataBuffer
@@ -472,7 +471,7 @@ class Connection
         $firstByteBinary = sprintf('%08b', ord($data[0]));
         $secondByteBinary = sprintf('%08b', ord($data[1]));
         $opcode = bindec(substr($firstByteBinary, 4, 4));
-        $isMasked = ($secondByteBinary[0] == '1') ? true : false;
+        $isMasked = $secondByteBinary[0] === '1';
         $payloadLength = ord($data[1]) & 127;
 
         // close connection if unmasked frame is received:

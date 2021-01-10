@@ -242,13 +242,12 @@ class Server
      */
     public function removeClientOnClose(Connection $client): void
     {
-        $clientId = $client->getClientId();
         $clientIp = $client->getClientIp();
         $clientPort = $client->getClientPort();
         $resource = $client->getClientSocket();
 
-        $this->removeIpFromStorage($client->getClientIp());
-        unset($this->clients[(int)$resource]);
+        $this->removeIpFromStorage($clientIp);
+        unset($this->clients[(int) $resource]);
         $index = array_search($resource, $this->allsockets);
         unset($this->allsockets[$index], $client);
 
@@ -256,7 +255,7 @@ class Server
         if ($this->hasApplication('status')) {
             $this->getApplication('status')->clientDisconnected($clientIp, $clientPort);
         }
-        unset($clientId, $clientIp, $clientPort, $resource);
+        unset($clientIp, $clientPort, $resource);
     }
 
     /**
@@ -272,20 +271,7 @@ class Server
             $client->getClientApplication()->onDisconnect($client);
         }
 
-        $resource = $client->getClientSocket();
-        $clientId = $client->getClientId();
-        $clientIp = $client->getClientIp();
-        $clientPort = $client->getClientPort();
-        $this->removeIpFromStorage($client->getClientIp());
-        unset($this->clients[(int)$resource]);
-        $index = array_search($resource, $this->allsockets);
-        unset($this->allsockets[$index], $client);
-
-        // trigger status application:
-        if ($this->hasApplication('status')) {
-            $this->getApplication('status')->clientDisconnected($clientIp, $clientPort);
-        }
-        unset($resource, $clientId, $clientIp, $clientPort);
+        $this->removeClientOnClose($client);
     }
 
     /**

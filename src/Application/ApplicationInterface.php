@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bloatless\WebSocket\Application;
 
 use Bloatless\WebSocket\Connection;
-use Bloatless\WebSocket\IPCPayload;
 
 interface ApplicationInterface
 {

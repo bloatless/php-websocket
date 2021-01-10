@@ -6,6 +6,11 @@ namespace Bloatless\WebSocket;
 
 class PushClient
 {
+    /**
+     * Path to unix domain socket.
+     *
+     * @var string $ipcSocketPath
+     */
     private string $ipcSocketPath;
 
     private const MAX_PAYLOAD_LENGTH = 65536;
@@ -15,6 +20,13 @@ class PushClient
         $this->ipcSocketPath = $ipcSocketPath;
     }
 
+    /**
+     * Push server control command.
+     *
+     * @param string $command
+     * @param array $data
+     * @return bool
+     */
     public function sendServerCommand(string $command, array $data): bool
     {
         $payload = IPCPayloadFactory::makeServerPayload($command, $data);
@@ -22,6 +34,13 @@ class PushClient
         return $this->sendPayloadToServer($payload);
     }
 
+    /**
+     * Pushes data into an application running within the websocket server.
+     *
+     * @param string $applicationName
+     * @param array $data
+     * @return bool
+     */
     public function sendToApplication(string $applicationName, array $data): bool
     {
         $payload = IPCPayloadFactory::makeApplicationPayload($applicationName, $data);
@@ -29,6 +48,12 @@ class PushClient
         return $this->sendPayloadToServer($payload);
     }
 
+    /**
+     * Pushes payload into the websocket server using a unix domain socket.
+     *
+     * @param IPCPayload $payload
+     * @return bool
+     */
     private function sendPayloadToServer(IPCPayload $payload): bool
     {
         $dataToSend = $payload->asJson();

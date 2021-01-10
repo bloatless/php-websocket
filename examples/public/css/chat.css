@@ -81,10 +81,9 @@ h2 {
 	color: #000;
 }
 
-#action,
 #data {
 	display: inline-block;
-	width: 200px;
+	width: 450px;
 	margin: 0 0 5px 0;
 }
 .bold {

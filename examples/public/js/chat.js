@@ -4,7 +4,6 @@
         const elLog = document.getElementById('log');
         const elStatus = document.getElementById('status');
         const elSend = document.getElementById('send');
-        const elAction = document.getElementById('action');
         const elData = document.getElementById('data');
 
         /**
@@ -17,7 +16,7 @@
 
         // Connect to server
         let socket = null;
-        let serverUrl = 'ws://127.0.0.1:8000/demo';
+        let serverUrl = 'ws://127.0.0.1:8000/chat';
         if (window.MozWebSocket) {
             socket = new MozWebSocket(serverUrl);
         } else if (window.WebSocket) {
@@ -26,7 +25,7 @@
         socket.binaryType = 'blob';
 
         /**
-         * Callen when connected to websocket server.
+         * Called when connected to websocket server.
          * @param {Object} msg
          */
         socket.onopen = (msg) => {
@@ -41,8 +40,7 @@
          */
         socket.onmessage = (msg) => {
             let response = JSON.parse(msg.data);
-            log(`Action: ${response.action}`);
-            log(`Data: ${response.data}`);
+            log(response.data);
         };
 
         /**
@@ -67,10 +65,25 @@
          */
         elSend.addEventListener('click', () => {
             let payload = {
-                action: elAction.value,
+                action: 'echo',
                 data: elData.value
             };
             socket.send(JSON.stringify(payload));
+        });
+
+        /**
+         * Adds event listener to data input, so message can be sent with enter key
+         */
+        elData.addEventListener('keyup', (evt) => {
+            if (evt.code !== 'Enter') {
+                return;
+            }
+            let payload = {
+                action: 'echo',
+                data: elData.value
+            };
+            socket.send(JSON.stringify(payload));
+            elData.value = '';
         });
     });
 }).call();

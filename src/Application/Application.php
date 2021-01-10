@@ -40,7 +40,7 @@ abstract class Application implements ApplicationInterface
      * Decodes json data received from stream.
      *
      * @param string $data
-     * @throws \InvalidArgumentException
+     * @throws \RuntimeException
      * @return array
      */
     protected function decodeData(string $data): array
@@ -69,7 +69,7 @@ abstract class Application implements ApplicationInterface
     {
         if (empty($action)) {
             throw new \InvalidArgumentException('Action can not be empty.');
-        };
+        }
 
         return json_encode([
             'action' => $action,

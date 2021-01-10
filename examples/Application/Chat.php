@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Bloatless\WebSocket\Application;
+namespace Bloatless\WebSocket\Examples\Application;
 
+use Bloatless\WebSocket\Application\Application;
 use Bloatless\WebSocket\Connection;
 
-class DemoApplication extends Application
+class Chat extends Application
 {
     /**
      * @var array $clients
@@ -14,27 +15,33 @@ class DemoApplication extends Application
     private array $clients = [];
 
     /**
+     * @var array $nicknames
+     */
+    private array $nicknames = [];
+
+    /**
      * Handles new connections to the application.
      *
-     * @param Connection $client
+     * @param Connection $connection
      * @return void
      */
-    public function onConnect(Connection $client): void
+    public function onConnect(Connection $connection): void
     {
-        $id = $client->getClientId();
-        $this->clients[$id] = $client;
+        $id = $connection->getClientId();
+        $this->clients[$id] = $connection;
+        $this->nicknames[$id] = 'Guest' . rand(10, 999);
     }
 
     /**
      * Handles client disconnects.
      *
-     * @param Connection $client
+     * @param Connection $connection
      * @return void
      */
-    public function onDisconnect(Connection $client): void
+    public function onDisconnect(Connection $connection): void
     {
-        $id = $client->getClientId();
-        unset($this->clients[$id]);
+        $id = $connection->getClientId();
+        unset($this->clients[$id], $this->nicknames[$id]);
     }
 
     /**
@@ -49,10 +56,20 @@ class DemoApplication extends Application
     {
         try {
             $decodedData = $this->decodeData($data);
-            $actionName = 'action' . ucfirst($decodedData['action']);
-            if (method_exists($this, $actionName)) {
-                call_user_func([$this, $actionName], $decodedData['data']);
+
+            // check if action is valid
+            if ($decodedData['action'] !== 'echo') {
+                return;
             }
+
+            $message = $decodedData['data'] ?? '';
+            if ($message === '') {
+                return;
+            }
+
+            $clientId = $client->getClientId();
+            $message = $this->nicknames[$clientId] . ': ' . $message;
+            $this->actionEcho($message);
         } catch (\RuntimeException $e) {
             // @todo Handle/Log error
         }
@@ -61,8 +78,9 @@ class DemoApplication extends Application
     public function onIPCData(array $data): void
     {
         $actionName = 'action' . ucfirst($data['action']);
+        $message = 'System Message: ' . $data['data'] ?? '';
         if (method_exists($this, $actionName)) {
-            call_user_func([$this, $actionName], $data['data']);
+            call_user_func([$this, $actionName], $message);
         }
     }
 
