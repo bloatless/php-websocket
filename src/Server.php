@@ -21,6 +21,16 @@ class Server
     protected $master;
 
     /**
+     * @var string $host Host the server will be bound to.
+     */
+    private string $host = '';
+
+    /**
+     * @var int $port Port the server will listen on.
+     */
+    private int $port = 0;
+
+    /**
      * @var resource $icpSocket
      */
     private $icpSocket;
@@ -29,6 +39,21 @@ class Server
      * @var string $ipcSocketPath
      */
     private string $ipcSocketPath;
+
+    /**
+     * @var string $ipcOwner If set, owner of the ipc socket will be changed to this value.
+     */
+    private string $ipcOwner = '';
+
+    /**
+     * @var string $ipcGroup If set, group of the ipc socket will be changed to this value.
+     */
+    private string $ipcGroup = '';
+
+    /**
+     * @var int $ipcMode If set, chmod of the ipc socket will be changed to this value.
+     */
+    private int $ipcMode = 0;
 
     /**
      * @var array Holds all connected sockets
@@ -90,11 +115,9 @@ class Server
         int $port = 8000,
         string $ipcSocketPath = '/tmp/phpwss.sock'
     ) {
-        ob_implicit_flush(); // php7.x -> int, php8.x => bool, default 1 or true
-        $this->createSocket($host, $port);
-        $this->openIPCSocket($ipcSocketPath);
-        $this->timers = new TimerCollection();
-        $this->log('Server created');
+        $this->host = $host;
+        $this->port = $port;
+        $this->ipcSocketPath = $ipcSocketPath;
     }
 
     /**
@@ -105,6 +128,12 @@ class Server
      */
     public function run(): void
     {
+        ob_implicit_flush();
+        $this->createSocket($this->host, $this->port);
+        $this->openIPCSocket($this->ipcSocketPath);
+        $this->timers = new TimerCollection();
+        $this->log('Server created');
+
         while (true) {
             $this->timers->runAll();
           
@@ -562,7 +591,15 @@ class Server
         if (socket_bind($this->icpSocket, $ipcSocketPath) === false) {
             throw new \RuntimeException('Could not bind to ipc socket.');
         }
-        $this->ipcSocketPath = $ipcSocketPath;
+        if ($this->ipcOwner !== '') {
+            chown($ipcSocketPath, $this->ipcOwner);
+        }
+        if ($this->ipcGroup !== '') {
+            chgrp($ipcSocketPath, $this->ipcGroup);
+        }
+        if ($this->ipcMode !== 0) {
+            chmod($ipcSocketPath, $this->ipcMode);
+        }
     }
 
     /**
@@ -593,5 +630,38 @@ class Server
             default:
                 throw new \RuntimeException('Invalid IPC message received.');
         }
+    }
+
+    /**
+     * Sets the icpOwner value.
+     *
+     * @param string $owner
+     * @return void
+     */
+    public function setIPCOwner(string $owner): void
+    {
+        $this->ipcOwner = $owner;
+    }
+
+    /**
+     * Sets the ipcGroup value.
+     *
+     * @param string $group
+     * @return void
+     */
+    public function setIPCGroup(string $group): void
+    {
+        $this->ipcGroup = $group;
+    }
+
+    /**
+     * Sets the ipcMode value.
+     *
+     * @param int $mode
+     * @return void
+     */
+    public function setIPCMode(int $mode): void
+    {
+        $this->ipcMode = $mode;
     }
 }
