@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bloatless\WebSocket;
 
 use Bloatless\WebSocket\Application\ApplicationInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Simple WebSocket server implementation in PHP.
@@ -104,6 +105,11 @@ class Server
      * @var TimerCollection $timers
      */
     private TimerCollection $timers;
+
+    /**
+     * @var array $loggers Holds all loggers.
+     */
+    private array $loggers = [];
 
     /**
      * @param string $host
@@ -260,7 +266,24 @@ class Server
      */
     public function log(string $message, string $type = 'info'): void
     {
-        echo date('Y-m-d H:i:s') . ' [' . ($type ? $type : 'error') . '] ' . $message . PHP_EOL;
+        if ($this->loggers === []) {
+            return;
+        }
+
+        /** @var LoggerInterface $logger */
+        foreach ($this->loggers as $logger) {
+            $logger->log($type, $message);
+        }
+    }
+
+    /**
+     * Adds a logger to the stack.
+     *
+     * @param LoggerInterface $logger
+     */
+    public function addLogger(LoggerInterface $logger): void
+    {
+        $this->loggers[] = $logger;
     }
 
     /**
