@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bloatless\WebSocket\Examples\Application;
+namespace Bloatless\WebSocketExamples\Application;
 
 use Bloatless\WebSocket\Application\Application;
 use Bloatless\WebSocket\Connection;

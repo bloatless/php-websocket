@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bloatless\WebSocket\Application;
+namespace Bloatless\WebSocket\Logger;
 
 use Psr\Log\AbstractLogger;
 use Psr\Log\LogLevel;

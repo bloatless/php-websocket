@@ -107,9 +107,9 @@ class Server
     private TimerCollection $timers;
 
     /**
-     * @var array $loggers Holds all loggers.
+     * @var ?LoggerInterface $logger A PSR3 compatible logger.
      */
-    private array $loggers = [];
+    private ?LoggerInterface $logger = null;
 
     /**
      * @param string $host
@@ -266,24 +266,21 @@ class Server
      */
     public function log(string $message, string $type = 'info'): void
     {
-        if ($this->loggers === []) {
+        if ($this->logger === null) {
             return;
         }
 
-        /** @var LoggerInterface $logger */
-        foreach ($this->loggers as $logger) {
-            $logger->log($type, $message);
-        }
+        $this->logger->log($type, $message);
     }
 
     /**
-     * Adds a logger to the stack.
+     * Sets a logger.
      *
      * @param LoggerInterface $logger
      */
-    public function addLogger(LoggerInterface $logger): void
+    public function setLogger(LoggerInterface $logger): void
     {
-        $this->loggers[] = $logger;
+        $this->logger = $logger;
     }
 
     /**

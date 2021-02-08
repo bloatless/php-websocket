@@ -31,8 +31,7 @@
 
 ### Installation procedure
 
-Clone or download the repository to your server. The package is also installable via composer running the following
-command:
+Install the package using composer:
 
 `composer require bloatless/php-websocket`
 

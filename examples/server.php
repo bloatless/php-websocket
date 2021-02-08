@@ -1,27 +1,13 @@
 <?php
 
-require __DIR__ . '/../src/Connection.php';
-require __DIR__ . '/../src/IPCPayload.php';
-require __DIR__ . '/../src/IPCPayloadFactory.php';
-require __DIR__ . '/../src/Server.php';
-require __DIR__ . '/../src/Timer.php';
-require __DIR__ . '/../src/TimerCollection.php';
-
-require __DIR__ . '/../src/Logger/LoggerInterface.php';
-require __DIR__ . '/../src/Logger/AbstractLogger.php';
-require __DIR__ . '/../src/Logger/LogLevel.php';
-require __DIR__ . '/../src/Logger/StdOutLogger.php';
-
-require __DIR__ . '/../src/Application/ApplicationInterface.php';
-require __DIR__ . '/../src/Application/Application.php';
-require __DIR__ . '/../src/Application/StatusApplication.php';
-
-require __DIR__ . '/Application/Chat.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 $server = new \Bloatless\WebSocket\Server('127.0.0.1', 8000, '/tmp/phpwss.sock');
-$server->addLogger(new \Bloatless\WebSocket\Application\StdOutLogger());
 
-// server settings:
+// add a PSR-3 compatible logger (optional)
+$server->setLogger(new \Bloatless\WebSocket\Logger\StdOutLogger());
+
+// server settings
 $server->setMaxClients(100);
 $server->setCheckOrigin(false);
 $server->setAllowedOrigin('foo.lh');
@@ -29,6 +15,6 @@ $server->setMaxConnectionsPerIp(100);
 
 // add your applications
 $server->registerApplication('status', \Bloatless\WebSocket\Application\StatusApplication::getInstance());
-$server->registerApplication('chat', \Bloatless\WebSocket\Examples\Application\Chat::getInstance());
+$server->registerApplication('chat', \Bloatless\WebSocketExamples\Application\Chat::getInstance());
 
 $server->run();
