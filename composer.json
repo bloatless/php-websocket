@@ -1,5 +1,5 @@
 {
-    "name": "haugli92/php-websocket",
+    "name": "bloatless/php-websocket",
     "description": "A simple WebSocket Server and Client implementation in PHP.",
     "keywords": [
         "php",
