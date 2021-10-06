@@ -597,7 +597,7 @@ class Connection
      * Return the headers of the connection
      * @return array
      */
-    public function getHeaders(): array
+    public function getClientHeaders(): array
     {
       return $this->headers;
     }
