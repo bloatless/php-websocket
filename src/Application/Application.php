@@ -16,7 +16,7 @@ abstract class Application implements ApplicationInterface
         // singleton construct required this method to be protected/private
     }
 
-    final protected function __clone()
+    private function __clone()
     {
         // singleton construct required this method to be protected/private
     }
