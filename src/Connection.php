@@ -51,6 +51,11 @@ class Connection
     private string $dataBuffer = '';
 
     /**
+     * @var array $queryParams
+     */
+    private array $queryParams = [];
+
+    /**
      * @param Server $server
      * @param resource $socket
      */
@@ -93,6 +98,13 @@ class Connection
         $path = $matches[1];
         $applicationKey = substr($path, 1);
 
+        // check for GET parameters (?a=123&b=456)
+        if ($pos = strpos($applicationKey, '?')) {
+            parse_str(substr($applicationKey, $pos + 1), $queryParams);
+            $this->queryParams = $queryParams;
+            $applicationKey = substr($applicationKey, 0, $pos -1);
+        }
+        
         if ($this->server->hasApplication($applicationKey) === false) {
             $this->log('Invalid application: ' . $path);
             $this->sendHttpResponse(404);
@@ -597,5 +609,25 @@ class Connection
     public function getClientApplication(): ?ApplicationInterface
     {
         return $this->application;
+    }
+
+    /**
+     * Returns the querystrings parameters passed by the connecting client
+     * @return array
+     */
+    public function getQueryParams()
+    {
+        return $this->queryParams;
+    }
+
+    /**
+     * Return specific querystring parameter passed by the connecting client
+     * @param $param
+     *
+     * @return mixed|null
+     */
+    public function getQueryParam($param)
+    {
+        return (isset($this->queryParams[$param])) ? $this->queryParams[$param] : null;
     }
 }
