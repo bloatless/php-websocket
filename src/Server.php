@@ -124,6 +124,7 @@ class Server
         $this->host = $host;
         $this->port = $port;
         $this->ipcSocketPath = $ipcSocketPath;
+        $this->timers = new TimerCollection();
     }
 
     /**
@@ -137,7 +138,6 @@ class Server
         ob_implicit_flush();
         $this->createSocket($this->host, $this->port);
         $this->openIPCSocket($this->ipcSocketPath);
-        $this->timers = new TimerCollection();
         $this->log('Server created');
 
         while (true) {
