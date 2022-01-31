@@ -598,10 +598,15 @@ class Server
      */
     private function openIPCSocket(string $ipcSocketPath): void
     {
-        if (file_exists($ipcSocketPath)) {
-            unlink($ipcSocketPath);
-        }
-        $this->icpSocket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
+		if (substr(php_uname(), 0, 7) == "Windows"){
+			$this->icpSocket = socket_create(AF_INET, SOCK_DGRAM, 0);
+			$ipcSocketPath = $this->host;
+		} else {
+			if (file_exists($ipcSocketPath)) {
+				unlink($ipcSocketPath);
+			}
+			$this->icpSocket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
+		}
         if ($this->icpSocket === false) {
             throw new \RuntimeException('Could not open ipc socket.');
         }
@@ -630,7 +635,13 @@ class Server
     private function handleIPC(): void
     {
         $buffer = '';
-        $bytesReceived = socket_recvfrom($this->icpSocket, $buffer, 65536, 0, $this->ipcSocketPath);
+		if (substr(php_uname(), 0, 7) == "Windows") {
+			$from = '';
+			$port = 0;
+			$bytesReceived = socket_recvfrom($this->icpSocket, $buffer, 65536, 0, $from, $port);
+		} else {
+			$bytesReceived = socket_recvfrom($this->icpSocket, $buffer, 65536, 0, $this->ipcSocketPath);
+		}
         if ($bytesReceived === false) {
             return;
         }
