@@ -73,7 +73,7 @@ class PushClient
         }
         $bytesSend = socket_sendto($socket, $dataToSend, $dataLength, MSG_EOF, $this->ipcSocketPath, 0);
         if ($bytesSend <= 0) {
-            throw new \RuntimeException('Could not sent data to IPC socket.');
+            throw new \RuntimeException('Could not sent data to IPC socket. ' . socket_strerror(socket_last_error()) . '.');
         }
         socket_close($socket);
 
