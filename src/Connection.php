@@ -49,6 +49,11 @@ class Connection
      * @var string $dataBuffer
      */
     private string $dataBuffer = '';
+  
+    /**
+     * @var array $headers
+     */
+    private array $headers = [];
 
     /**
      * @param Server $server
@@ -104,16 +109,15 @@ class Connection
         $this->application = $this->server->getApplication($applicationKey);
 
         // generate headers array:
-        $headers = [];
         foreach ($lines as $line) {
             $line = chop($line);
             if (preg_match('/\A(\S+): (.*)\z/', $line, $matches)) {
-                $headers[ strtolower($matches[1])] = $matches[2];
+                $this->headers[ strtolower($matches[1])] = $matches[2];
             }
         }
 
         // check for supported websocket version:
-        if (!isset($headers['sec-websocket-version']) || $headers['sec-websocket-version'] < 6) {
+        if (!isset($this->headers['sec-websocket-version']) || $this->headers['sec-websocket-version'] < 6) {
             $this->log('Unsupported websocket version.');
             $this->sendHttpResponse(501);
             stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
@@ -123,8 +127,8 @@ class Connection
 
         // check origin:
         if ($this->server->getCheckOrigin() === true) {
-            $origin = (isset($headers['sec-websocket-origin'])) ? $headers['sec-websocket-origin'] : '';
-            $origin = (isset($headers['origin'])) ? $headers['origin'] : $origin;
+            $origin = (isset($this->headers['sec-websocket-origin'])) ? $this->headers['sec-websocket-origin'] : '';
+            $origin = (isset($this->headers['origin'])) ? $this->headers['origin'] : $origin;
             if (empty($origin)) {
                 $this->log('No origin provided.');
                 $this->sendHttpResponse(401);
@@ -143,13 +147,13 @@ class Connection
         }
 
         // do handyshake: (hybi-10)
-        $secKey = $headers['sec-websocket-key'];
+        $secKey = $this->headers['sec-websocket-key'];
         $secAccept = base64_encode(pack('H*', sha1($secKey . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
         $response = "HTTP/1.1 101 Switching Protocols\r\n";
         $response .= "Upgrade: websocket\r\n";
         $response .= "Connection: Upgrade\r\n";
         $response .= "Sec-WebSocket-Accept: " . $secAccept . "\r\n";
-        if (isset($headers['sec-websocket-protocol']) && !empty($headers['sec-websocket-protocol'])) {
+        if (isset($this->headers['sec-websocket-protocol']) && !empty($this->headers['sec-websocket-protocol'])) {
             $response .= "Sec-WebSocket-Protocol: " . substr($path, 1) . "\r\n";
         }
         $response .= "\r\n";
@@ -587,6 +591,15 @@ class Connection
     public function getClientSocket()
     {
         return $this->socket;
+    }
+  
+    /**
+     * Return the headers of the connection
+     * @return array
+     */
+    public function getClientHeaders(): array
+    {
+      return $this->headers;
     }
 
     /**
