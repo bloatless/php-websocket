@@ -157,7 +157,7 @@ class StatusApplication extends Application
     {
         $data = [
             'type' => $type,
-            'text' => '[' . strftime('%m-%d %H:%M', time()) . '] ' . $text,
+            'text' => '[' . date('m-d H:i') . '] ' . $text,
         ];
         $encodedData = $this->encodeData('statusMsg', $data);
         $this->sendAll($encodedData);
