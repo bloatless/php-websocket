@@ -164,6 +164,7 @@ class StatusApplication extends Application
         ];
         $encodedData = $this->encodeData('statusMsg', $data);
         $this->sendAll($encodedData);
+        $this->getLogger()->log($type, 'Status message: ' . $text);
     }
 
     /**
