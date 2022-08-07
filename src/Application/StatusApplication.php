@@ -6,7 +6,7 @@ namespace Bloatless\WebSocket\Application;
 
 use Bloatless\WebSocket\Connection;
 
-class StatusApplication extends Application
+class StatusApplication extends LoggerAwareApplication
 {
     /**
      * Holds client connected to the status application.
