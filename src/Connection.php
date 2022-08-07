@@ -49,7 +49,7 @@ class Connection
      * @var string $dataBuffer
      */
     private string $dataBuffer = '';
-  
+
     /**
      * @var array $headers
      */
@@ -176,7 +176,7 @@ class Connection
     }
 
     /**
-     * Sends an http response to client.
+     * Sends a http response to client.
      *
      * @param int $httpStatusCode
      * @throws \RuntimeException
@@ -245,10 +245,10 @@ class Connection
             $this->waitingForData = true;
             $this->dataBuffer .= $data;
             return false;
-        } else {
-            $this->dataBuffer = '';
-            $this->waitingForData = false;
         }
+
+        $this->dataBuffer = '';
+        $this->waitingForData = false;
 
         // trigger status application:
         if ($this->server->hasApplication('status')) {
@@ -381,7 +381,7 @@ class Connection
     }
 
     /**
-     * Encodes a frame/message according the the WebSocket protocol standard.
+     * Encodes a frame/message according the WebSocket protocol standard.
      *
      * @param string $payload
      * @param string $type
@@ -531,7 +531,7 @@ class Connection
         /**
          * We have to check for large frames here. socket_recv cuts at 1024 bytes
          * so if websocket-frame is > 1024 bytes we have to wait until whole
-         * data is transferd.
+         * data is transferred.
          */
         if (strlen($data) < $dataLength) {
             return [];
@@ -546,7 +546,7 @@ class Connection
             }
             $decodedData['payload'] = $unmaskedPayload;
         } else {
-            $payloadOffset = $payloadOffset - 4;
+            $payloadOffset -= 4;
             $decodedData['payload'] = substr($data, $payloadOffset);
         }
 
@@ -584,7 +584,7 @@ class Connection
     }
 
     /**
-     * Retuns the socket/resource of the connection.
+     * Returns the socket/resource of the connection.
      *
      * @return resource
      */
@@ -592,9 +592,10 @@ class Connection
     {
         return $this->socket;
     }
-  
+
     /**
      * Return the headers of the connection
+     *
      * @return array
      */
     public function getClientHeaders(): array

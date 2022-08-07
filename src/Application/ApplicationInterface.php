@@ -9,21 +9,21 @@ use Bloatless\WebSocket\Connection;
 interface ApplicationInterface
 {
     /**
-     * This method is tirggered when a new client connects to server/application.
+     * This method is triggered when a new client connects to server/application.
      *
      * @param Connection $connection
      */
     public function onConnect(Connection $connection): void;
 
     /**
-     * This methods is triggered when a client disconnects from server/application.
+     * This method is triggered when a client disconnects from server/application.
      *
      * @param Connection $connection
      */
     public function onDisconnect(Connection $connection): void;
 
     /**
-     * This method is triggered when the server recieves new data from a client.
+     * This method is triggered when the server receives new data from a client.
      *
      * @param string $data
      * @param Connection $client
@@ -31,7 +31,7 @@ interface ApplicationInterface
     public function onData(string $data, Connection $client): void;
 
     /**
-     * This method is called when server recieves to for an application on the IPC socket.
+     * This method is called when server receives to for an application on the IPC socket.
      *
      * @param array $data
      */

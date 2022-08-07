@@ -85,7 +85,7 @@ class Chat extends Application
         $actionName = 'action' . ucfirst($data['action']);
         $message = 'System Message: ' . $data['data'] ?? '';
         if (method_exists($this, $actionName)) {
-            call_user_func([$this, $actionName], $message);
+            $this->$actionName($message);
         }
     }
 
@@ -98,8 +98,8 @@ class Chat extends Application
     private function actionEcho(string $text): void
     {
         $encodedData = $this->encodeData('echo', $text);
-        foreach ($this->clients as $sendto) {
-            $sendto->send($encodedData);
+        foreach ($this->clients as $client) {
+            $client->send($encodedData);
         }
     }
 }
