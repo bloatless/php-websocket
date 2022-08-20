@@ -6,7 +6,7 @@ namespace Bloatless\WebSocket\Application;
 
 use Bloatless\WebSocket\Connection;
 
-class StatusApplication extends Application
+class StatusApplication extends LoggerAwareApplication
 {
     /**
      * Holds client connected to the status application.
@@ -164,6 +164,7 @@ class StatusApplication extends Application
         ];
         $encodedData = $this->encodeData('statusMsg', $data);
         $this->sendAll($encodedData);
+        $this->getLogger()->log($type, 'Status message: ' . $text);
     }
 
     /**
