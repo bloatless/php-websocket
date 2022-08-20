@@ -137,8 +137,9 @@ class Server
     {
         ob_implicit_flush();
         $this->createSocket($this->host, $this->port);
-        if ($this->ipcSocketPath)
+        if ($this->ipcSocketPath) {
             $this->openIPCSocket($this->ipcSocketPath);
+        }
         $this->log('Server created');
 
         while (true) {
