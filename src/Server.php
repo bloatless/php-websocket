@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bloatless\WebSocket;
 
 use Bloatless\WebSocket\Application\ApplicationInterface;
+use Bloatless\WebSocket\Application\StatusApplication;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -22,24 +23,9 @@ class Server
     protected $master;
 
     /**
-     * @var string $host Host the server will be bound to.
-     */
-    private string $host = '';
-
-    /**
-     * @var int $port Port the server will listen on.
-     */
-    private int $port = 0;
-
-    /**
      * @var resource $icpSocket
      */
     private $icpSocket;
-
-    /**
-     * @var null|string $ipcSocketPath
-     */
-    private ?string $ipcSocketPath;
 
     /**
      * @var string $ipcOwner If set, owner of the ipc socket will be changed to this value.
@@ -57,7 +43,7 @@ class Server
     private int $ipcMode = 0;
 
     /**
-     * @var array Holds all connected sockets
+     * @var resource[] Holds all connected sockets
      */
     protected array $allsockets = [];
 
@@ -67,17 +53,17 @@ class Server
     protected $context = null;
 
     /**
-     * @var array $clients
+     * @var Connection[] $clients
      */
     protected array $clients = [];
 
     /**
-     * @var array $applications
+     * @var ApplicationInterface[] $applications
      */
     protected array $applications = [];
 
     /**
-     * @var array $ipStorage
+     * @var string[] $ipStorage
      */
     private array $ipStorage = [];
 
@@ -87,7 +73,7 @@ class Server
     private bool $checkOrigin = true;
 
     /**
-     * @var array $allowedOrigins
+     * @var string[] $allowedOrigins
      */
     private array $allowedOrigins = [];
 
@@ -117,19 +103,16 @@ class Server
      * @param null|string $ipcSocketPath
      */
     public function __construct(
-        string $host = 'localhost',
-        int $port = 8000,
-        ?string $ipcSocketPath = '/tmp/phpwss.sock'
+        private string $host = 'localhost',
+        private int $port = 8000,
+        private ?string $ipcSocketPath = '/tmp/phpwss.sock'
     ) {
-        $this->host = $host;
-        $this->port = $port;
-        $this->ipcSocketPath = $ipcSocketPath;
         $this->timers = new TimerCollection();
     }
 
     /**
      * Main server loop.
-     * Listens for connections, handles connectes/disconnectes, e.g.
+     * Listens for connections, handles connects/disconnects, e.g.
      *
      * @return void
      */
@@ -152,36 +135,42 @@ class Server
                     if (($ressource = stream_socket_accept($this->master)) === false) {
                         $this->log('Socket error: ' . socket_strerror(socket_last_error($ressource)));
                         continue;
-                    } else {
-                        $client = $this->createConnection($ressource);
-                        $this->clients[(int)$ressource] = $client;
-                        $this->allsockets[] = $ressource;
+                    }
 
-                        if (count($this->clients) > $this->maxClients) {
-                            $client->onDisconnect();
-                            if ($this->hasApplication('status')) {
-                                $this->getApplication('status')->statusMsg(
-                                    'Attention: Client Limit Reached!',
-                                    'warning'
-                                );
-                            }
-                            continue;
+                    $client = $this->createConnection($ressource);
+                    $this->clients[(int)$ressource] = $client;
+                    $this->allsockets[] = $ressource;
+
+                    if (count($this->clients) > $this->maxClients) {
+                        $client->onDisconnect();
+                        if ($this->hasApplication('status')) {
+                            $app = $this->getApplication('status');
+
+                            assert($app instanceof StatusApplication);
+
+                            $app->statusMsg(
+                                'Attention: Client Limit Reached!',
+                                'warning'
+                            );
                         }
+                        continue;
+                    }
 
-                        $this->addIpToStorage($client->getClientIp());
-                        if ($this->checkMaxConnectionsPerIp($client->getClientIp()) === false) {
-                            $client->onDisconnect();
-                            if ($this->hasApplication('status')) {
-                                $this->getApplication('status')->statusMsg(
-                                    'Connection/Ip limit for ip ' . $client->getClientIp() . ' was reached!',
-                                    'warning'
-                                );
-                            }
-                            continue;
+                    $this->addIpToStorage($client->getClientIp());
+                    if ($this->checkMaxConnectionsPerIp($client->getClientIp()) === false) {
+                        $client->onDisconnect();
+                        if ($this->hasApplication('status')) {
+                            $app = $this->getApplication('status');
+
+                            assert($app instanceof StatusApplication);
+
+                            $app->statusMsg(
+                                'Connection/Ip limit for ip ' . $client->getClientIp() . ' was reached!',
+                                'warning'
+                            );
                         }
                     }
                 } else {
-                    /** @var Connection $client */
                     $client = $this->clients[(int)$socket];
                     if (!is_object($client)) {
                         unset($this->clients[(int)$socket]);
@@ -209,7 +198,7 @@ class Server
     }
 
     /**
-     * Checks if an application is registred.
+     * Checks if an application is registered.
      *
      * @param string $key
      * @return bool
@@ -251,11 +240,14 @@ class Server
 
         // status is kind of a system-app, needs some special cases:
         if ($key === 'status') {
+            assert($application instanceof StatusApplication);
+
             $serverInfo = array(
                 'maxClients' => $this->maxClients,
                 'maxConnectionsPerIp' => $this->maxConnectionsPerIp,
             );
-            $this->applications[$key]->setServerInfo($serverInfo);
+
+            $application->setServerInfo($serverInfo);
         }
     }
 
@@ -304,7 +296,11 @@ class Server
 
         // trigger status application:
         if ($this->hasApplication('status')) {
-            $this->getApplication('status')->clientDisconnected($clientIp, $clientPort);
+            $app = $this->getApplication('status');
+
+            assert($app instanceof StatusApplication);
+
+            $app->clientDisconnected($clientIp, $clientPort);
         }
         unset($clientIp, $clientPort, $resource);
     }
@@ -334,10 +330,7 @@ class Server
      */
     public function checkOrigin(string $domain): bool
     {
-        $domain = str_replace('http://', '', $domain);
-        $domain = str_replace('https://', '', $domain);
-        $domain = str_replace('www.', '', $domain);
-        $domain = str_replace('/', '', $domain);
+        $domain = str_replace(array('http://', 'https://', 'www.', '/'), '', $domain);
 
         return isset($this->allowedOrigins[$domain]);
     }
@@ -402,20 +395,17 @@ class Server
         if (!isset($this->ipStorage[$ip])) {
             return true;
         }
-        return ($this->ipStorage[$ip] > $this->maxConnectionsPerIp) ? false : true;
+        return $this->ipStorage[$ip] <= $this->maxConnectionsPerIp;
     }
 
     /**
      * Set whether the client origin should be checked on new connections.
      *
      * @param bool $doOriginCheck
-     * @return bool True if value could validated and set successfully.
+     * @return bool True if value could be validated and set successfully.
      */
     public function setCheckOrigin(bool $doOriginCheck): bool
     {
-        if (is_bool($doOriginCheck) === false) {
-            return false;
-        }
         $this->checkOrigin = $doOriginCheck;
         return true;
     }
@@ -437,9 +427,8 @@ class Server
      */
     public function setAllowedOrigin(string $domain): bool
     {
-        $domain = str_replace('http://', '', $domain);
-        $domain = str_replace('www.', '', $domain);
-        $domain = (strpos($domain, '/') !== false) ? substr($domain, 0, strpos($domain, '/')) : $domain;
+        $domain = str_replace(array('http://', 'www.'), '', $domain);
+        $domain = str_contains($domain, '/') ? substr($domain, 0, strpos($domain, '/')) : $domain;
         if (empty($domain)) {
             return false;
         }
@@ -455,9 +444,6 @@ class Server
      */
     public function setMaxConnectionsPerIp(int $limit): bool
     {
-        if (!is_int($limit)) {
-            return false;
-        }
         $this->maxConnectionsPerIp = $limit;
         return true;
     }
@@ -465,7 +451,7 @@ class Server
     /**
      * Returns the max. connections per ip value.
      *
-     * @return int Max. simoultanous  allowed connections for an ip to this server.
+     * @return int Max. simultaneous  allowed connections for an ip to this server.
      */
     public function getMaxConnectionsPerIp(): int
     {
@@ -600,15 +586,15 @@ class Server
      */
     private function openIPCSocket(string $ipcSocketPath): void
     {
-		if (substr(php_uname(), 0, 7) == "Windows"){
-			$this->icpSocket = socket_create(AF_INET, SOCK_DGRAM, 0);
-			$ipcSocketPath = $this->host;
-		} else {
-			if (file_exists($ipcSocketPath)) {
-				unlink($ipcSocketPath);
-			}
-			$this->icpSocket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
-		}
+        if (str_starts_with(php_uname(), "Windows")) {
+            $this->icpSocket = socket_create(AF_INET, SOCK_DGRAM, 0);
+            $ipcSocketPath = $this->host;
+        } else {
+            if (file_exists($ipcSocketPath)) {
+                unlink($ipcSocketPath);
+            }
+            $this->icpSocket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
+        }
         if ($this->icpSocket === false) {
             throw new \RuntimeException('Could not open ipc socket.');
         }
@@ -637,7 +623,7 @@ class Server
     private function handleIPC(): void
     {
         $buffer = '';
-		if (substr(php_uname(), 0, 7) == "Windows") {
+		if (str_starts_with(php_uname(), "Windows")) {
 			$from = '';
 			$port = 0;
 			$bytesReceived = socket_recvfrom($this->icpSocket, $buffer, 65536, 0, $from, $port);

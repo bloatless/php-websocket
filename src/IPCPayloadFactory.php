@@ -31,7 +31,7 @@ class IPCPayloadFactory
     }
 
     /**
-     * Creates payload object from json ecoded string.
+     * Creates payload object from json encoded string.
      *
      * @param string $json
      * @return IPCPayload
@@ -39,13 +39,10 @@ class IPCPayloadFactory
     public static function fromJson(string $json): IPCPayload
     {
         $data = json_decode($json, true);
-        switch ($data['type']) {
-            case IPCPayload::TYPE_SERVER:
-                return new IPCPayload(IPCPayload::TYPE_SERVER, $data['action'], $data['data']);
-            case IPCPayload::TYPE_APPLICATION:
-                return new IPCPayload(IPCPayload::TYPE_APPLICATION, $data['action'], $data['data']);
-            default:
-                throw new \RuntimeException('Can not create IPCPayload from invalid data type.');
-        }
+        return match ($data['type']) {
+            IPCPayload::TYPE_SERVER => new IPCPayload(IPCPayload::TYPE_SERVER, $data['action'], $data['data']),
+            IPCPayload::TYPE_APPLICATION => new IPCPayload(IPCPayload::TYPE_APPLICATION, $data['action'], $data['data']),
+            default => throw new \RuntimeException('Can not create IPCPayload from invalid data type.'),
+        };
     }
 }

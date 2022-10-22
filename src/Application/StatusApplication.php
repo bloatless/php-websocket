@@ -46,7 +46,7 @@ class StatusApplication extends Application
     {
         $id = $connection->getClientId();
         $this->clients[$id] = $connection;
-        $this->sendServerinfo($connection);
+        $this->sendServerInfo($connection);
     }
 
     /**
@@ -62,7 +62,7 @@ class StatusApplication extends Application
     }
 
     /**
-     * This application does not expect any incomming client data.
+     * This application does not expect any incoming client data.
      *
      * @param string $data
      * @param Connection $client
@@ -86,11 +86,8 @@ class StatusApplication extends Application
      */
     public function setServerInfo(array $serverInfo): bool
     {
-        if (is_array($serverInfo)) {
-            $this->serverInfo = $serverInfo;
-            return true;
-        }
-        return false;
+        $this->serverInfo = $serverInfo;
+        return true;
     }
 
     /**
@@ -153,14 +150,14 @@ class StatusApplication extends Application
     /**
      * Sends a status message to all clients connected to the application.
      *
-     * @param $text
+     * @param string $text
      * @param string $type
      */
     public function statusMsg(string $text, string $type = 'info'): void
     {
         $data = [
             'type' => $type,
-            'text' => '[' . strftime('%m-%d %H:%M', time()) . '] ' . $text,
+            'text' => '[' . date('m-d H:i') . '] ' . $text,
         ];
         $encodedData = $this->encodeData('statusMsg', $data);
         $this->sendAll($encodedData);
@@ -172,7 +169,7 @@ class StatusApplication extends Application
      * @param Connection $client
      * @return void
      */
-    private function sendServerinfo(Connection $client): void
+    private function sendServerInfo(Connection $client): void
     {
         if (count($this->clients) < 1) {
             return;
@@ -195,8 +192,8 @@ class StatusApplication extends Application
         if (count($this->clients) < 1) {
             return;
         }
-        foreach ($this->clients as $sendto) {
-            $sendto->send($encodedData);
+        foreach ($this->clients as $client) {
+            $client->send($encodedData);
         }
     }
 }

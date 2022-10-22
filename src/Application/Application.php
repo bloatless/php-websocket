@@ -28,7 +28,7 @@ abstract class Application implements ApplicationInterface
      */
     final public static function getInstance(): ApplicationInterface
     {
-        $calledClassName = get_called_class();
+        $calledClassName = static::class;
         if (!isset(self::$instances[$calledClassName])) {
             self::$instances[$calledClassName] = new $calledClassName();
         }
@@ -40,12 +40,13 @@ abstract class Application implements ApplicationInterface
      * Decodes json data received from stream.
      *
      * @param string $data
-     * @throws \RuntimeException
      * @return array
+     * @throws \JsonException
+     * @throws \RuntimeException
      */
     protected function decodeData(string $data): array
     {
-        $decodedData = json_decode($data, true);
+        $decodedData = json_decode($data, true, flags: JSON_THROW_ON_ERROR);
         if (empty($decodedData)) {
             throw new \RuntimeException('Could not decode data.');
         }
@@ -58,14 +59,14 @@ abstract class Application implements ApplicationInterface
     }
 
     /**
-     * Enocdes data to be send to client.
+     * Encodes data to be sent to client.
      *
      * @param string $action
      * @param mixed $data
-     * @throws \InvalidArgumentException
      * @return string
+     * @throws \InvalidArgumentException
      */
-    protected function encodeData(string $action, $data): string
+    protected function encodeData(string $action, mixed $data): string
     {
         if (empty($action)) {
             throw new \InvalidArgumentException('Action can not be empty.');

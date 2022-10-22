@@ -61,7 +61,7 @@ class PushClient
         if ($dataLength > self::MAX_PAYLOAD_LENGTH) {
             throw new \RuntimeException(
                 sprintf(
-                    'IPC payload exeeds max length of %d bytes. (%d bytes given.)',
+                    'IPC payload exceeds max length of %d bytes. (%d bytes given.)',
                     self::MAX_PAYLOAD_LENGTH,
                     $dataLength
                 )

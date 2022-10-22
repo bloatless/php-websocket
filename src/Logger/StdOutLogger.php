@@ -27,11 +27,12 @@ class StdOutLogger extends AbstractLogger
      * @param mixed $level
      * @param string $message
      * @param array $context
+     * @return void
      */
-    public function log($level, $message, array $context = [])
+    public function log($level, $message, array $context = []): void
     {
         $level = $level ?? LogLevel::ERROR;
-        $output = isset(self::OUTMAP[$level]) ? self::OUTMAP[$level] : STDERR;
+        $output = self::OUTMAP[$level] ?? STDERR;
         fwrite($output, date('Y-m-d H:i:s') . ' [' . $level . '] ' . $message . PHP_EOL);
     }
 }
