@@ -28,11 +28,6 @@ class Server
     private $icpSocket;
 
     /**
-     * @var null|string $ipcSocketPath
-     */
-    private ?string $ipcSocketPath;
-
-    /**
      * @var string $ipcOwner If set, owner of the ipc socket will be changed to this value.
      */
     private string $ipcOwner = '';
